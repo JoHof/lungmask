@@ -29,7 +29,7 @@ def apply(image, model, force_cpu=False, batch_size=20, volume_postprocessing=Tr
         if torch.cuda.is_available():
             device = torch.device('cuda')
         else:
-            logging.info("No GPU support available, will use CPU. Note, that this is significantely slower!")
+            logging.info("No GPU support available, will use CPU. Note, that this is significantly slower!")
             batch_size = 1
             device = torch.device('cpu')
     model.to(device)
