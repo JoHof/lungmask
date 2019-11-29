@@ -4,23 +4,27 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="lungmask-jhofmanninger", # Replace with your own username
+    name="lungmask",
     version="0.1",
     author="Johannes Hofmanninger",
-    author_email="j.hofmanninger@gmail.com",
+    author_email="johannes.hofmanninger@meduniwien.ac.at",
     description="Package for automated lung mask generation in CT",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/JoHof/lungmask",
     packages=setuptools.find_packages(),
+    entry_points={
+        'console_scripts': [
+            'lungmask = lungmask.__main__:main'
+        ]
+    },
     install_requires=[
         'pydicom',
         'numpy',
-        'scikit_image',
         'torch',
-        'torchvision',
         'scipy',
         'SimpleITK',
+        'tqdm',
         'scikit-image',
     ],
     classifiers=[
@@ -28,5 +32,5 @@ setuptools.setup(
         "License :: OSI Approved :: GPLv3",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6'
+    python_requires='>=3.6',
 )

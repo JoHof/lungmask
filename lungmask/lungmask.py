@@ -1,15 +1,13 @@
 import numpy as np
 import torch
-import torchvision
-import utils
-import os
+from . import utils
 import SimpleITK as sitk
 import skimage
-import argparse
-from resunet import UNet
+from .resunet import UNet
 import scipy.ndimage as ndimage
 import warnings
 import sys
+from tqdm import tqdm
 
 import logging
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -19,7 +17,7 @@ warnings.filterwarnings("ignore",category=UserWarning)
 model_urls = {('unet','R231'): 'http://www.cir.meduniwien.ac.at/downloads/unet_r231-28d0c9ef.pth'}
 
 
-def apply(image, model, force_cpu=False, batch_size=20, volume_postprocessing=True):
+def apply(image, model, force_cpu=False, batch_size=20, volume_postprocessing=True, show_process=True):
 
     voxvol = np.prod(image.GetSpacing())
     inimg_raw = sitk.GetArrayFromImage(image)
@@ -45,7 +43,7 @@ def apply(image, model, force_cpu=False, batch_size=20, volume_postprocessing=Tr
     timage_res = np.empty((np.append(0,tvolslices[0].shape)), dtype=np.uint8)
 
     with torch.no_grad():
-        for X in dataloader_val:
+        for X in tqdm(dataloader_val):
             X = X.float().to(device)
             prediction = model(X)
             pls = torch.max(prediction,1)[1].detach().cpu().numpy().astype(np.uint8)
@@ -79,7 +77,7 @@ def apply(image, model, force_cpu=False, batch_size=20, volume_postprocessing=Tr
 
 def get_model(modeltype, modelname):
     model_url = model_urls[(modeltype, modelname)]
-    state_dict = torchvision.models.utils.load_state_dict_from_url(model_url, progress=True)
+    state_dict = torch.hub.load_state_dict_from_url(model_url, progress=True)
     if modeltype == 'unet':
         model = UNet(n_classes=3, padding=True,  depth=5, up_mode='upsample', batch_norm=True, residual=False)
     elif modeltype == 'resunet':
@@ -90,47 +88,3 @@ def get_model(modeltype, modelname):
     model.eval()
     return model
 
-
-def path(string):
-    if os.path.exists(string):
-        return string
-    else:
-        sys.exit(f'File not found: {string}')
-
-
-def get_input_image(path):
-    if os.path.isfile(path):
-        logging.info(f'Read input: {path}')
-        input_image = sitk.ReadImage(path)
-    else:
-        logging.info(f'Looking for dicoms in {path}')
-        dicom_vols = utils.read_dicoms(path, original=False, primary=False)
-        if len(dicom_vols) < 1:
-            sys.exit('No dicoms found!')
-        if len(dicom_vols) > 1:
-            logging.warning("There are more than one volume in the path, will take the largest one")
-        input_image = dicom_vols[np.argmax([np.prod(v.GetSize()) for v in dicom_vols], axis=0)]
-    return input_image
-
-
-if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('input', metavar='input', type=path, help='Path to the input image, can be a folder for dicoms')
-    parser.add_argument('output', metavar='output', type=str, help='Filepath for output lungmask')
-    parser.add_argument('--modeltype', help='Default: unet', type=str, choices=['unet', 'resunet'], default='unet')
-    parser.add_argument('--modelname', help="spcifies the trained model, Default: R231", type=str, choices=['R231'], default='R231')
-    parser.add_argument('--cpu', help="Force using the CPU even when a GPU is available", action='store_true')
-    parser.add_argument('--batchsize', type=int, help="Number of slices processed simultaneously. Lower number requires less memory but may be slower.", default=20)
-    args = parser.parse_args()
-
-    logging.info(f'Load model')
-    model = get_model(args.modeltype, args.modelname)
-    input_image = get_input_image(args.input)
-    logging.info(f'Infer lungmask')
-    result = apply(input_image, model, force_cpu=args.cpu, batch_size=args.batchsize)
-
-    result_out= sitk.GetImageFromArray(result)
-    result_out.CopyInformation(input_image)
-    logging.info(f'Save result to: {args.output}')
-    sys.exit(sitk.WriteImage(result_out, args.output))

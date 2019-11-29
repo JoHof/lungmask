@@ -7,6 +7,8 @@ import sys
 import SimpleITK as sitk
 import pydicom as pyd
 import logging
+from tqdm import tqdm
+
 
 def preprocess(img, label=None, resolution = [192,192]):
     imgmtx = np.copy(img)
@@ -65,6 +67,7 @@ def crop_and_resize(img,mask=None,width=192,height=192):
         #mask = ndimage.binary_closing(mask,iterations=5)
     return img,mask,bbox
 
+
 def reshape_mask(mask,tbox,origsize):
     res = np.ones(origsize)*0
     resize=[tbox[2]-tbox[0], tbox[3]-tbox[1]]
@@ -72,6 +75,7 @@ def reshape_mask(mask,tbox,origsize):
 
     res[tbox[0]:tbox[2],tbox[1]:tbox[3]] = imgres
     return res
+
 
 class LungLabelsDS_inf(Dataset):
     def __init__(self, ds):
@@ -94,7 +98,7 @@ def read_dicoms(path, primary=True, original=True):
     dcm_parameters = []
     unique_set = [] #need this because too often there are duplicates of dicom files with different names
     i = 0
-    for fname in allfnames:
+    for fname in tqdm(allfnames):
         filename_ = os.path.splitext(os.path.split(fname)[1])
         i += 1
         if filename_[0] != 'DICOMDIR':
@@ -157,5 +161,20 @@ def read_dicoms(path, primary=True, original=True):
 
 
     return relevant_volumes
+
+
+def get_input_image(path):
+    if os.path.isfile(path):
+        logging.info(f'Read input: {path}')
+        input_image = sitk.ReadImage(path)
+    else:
+        logging.info(f'Looking for dicoms in {path}')
+        dicom_vols = read_dicoms(path, original=False, primary=False)
+        if len(dicom_vols) < 1:
+            sys.exit('No dicoms found!')
+        if len(dicom_vols) > 1:
+            logging.warning("There are more than one volume in the path, will take the largest one")
+        input_image = dicom_vols[np.argmax([np.prod(v.GetSize()) for v in dicom_vols], axis=0)]
+    return input_image
 
 
