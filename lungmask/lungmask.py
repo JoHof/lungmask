@@ -30,6 +30,7 @@ def apply(image, model, force_cpu=False, batch_size=20, volume_postprocessing=Tr
             device = torch.device('cuda')
         else:
             logging.info("No GPU support available, will use CPU. Note, that this is significantely slower!")
+            batch_size = 1
             device = torch.device('cpu')
     model.to(device)
 
@@ -77,7 +78,7 @@ def apply(image, model, force_cpu=False, batch_size=20, volume_postprocessing=Tr
 
 def get_model(modeltype, modelname):
     model_url = model_urls[(modeltype, modelname)]
-    state_dict = torch.hub.load_state_dict_from_url(model_url, progress=True)
+    state_dict = torch.hub.load_state_dict_from_url(model_url, progress=True, map_location=torch.device('cpu'))
     if modeltype == 'unet':
         model = UNet(n_classes=3, padding=True,  depth=5, up_mode='upsample', batch_norm=True, residual=False)
     elif modeltype == 'resunet':
