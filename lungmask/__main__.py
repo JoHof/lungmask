@@ -42,10 +42,6 @@ def main():
     logging.info(f'Save result to: {args.output}')
     sys.exit(sitk.WriteImage(result_out, args.output))
 
-    print("This is the main routine.")
-    print("It should do something interesting.")
-    print(args)
-
     # Do argument parsing here (eg. with argparse) and anything else
     # you want your project to do.
 

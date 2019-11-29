@@ -153,7 +153,3 @@ class UNetUpBlock(nn.Module):
             out = out+out_orig
 
         return out
-
-
-import torchvision.models as models
-models.vgg16(pretrained=True)
