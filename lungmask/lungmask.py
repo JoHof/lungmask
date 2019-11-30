@@ -13,8 +13,9 @@ import logging
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 warnings.filterwarnings("ignore",category=UserWarning)
 
-
-model_urls = {('unet','R231'): 'http://www.cir.meduniwien.ac.at/downloads/unet_r231-28d0c9ef.pth'}
+# stores urls and number of classes of the models
+model_urls = {('unet','R231'): ('http://www.cir.meduniwien.ac.at/downloads/unet_r231-28d0c9ef.pth',3),
+('unet','LTRCLobes'): ('http://www.cir.meduniwien.ac.at/downloads/unet_ltrclobes-3a07043d.pth',6)}
 
 
 def apply(image, model, force_cpu=False, batch_size=20, volume_postprocessing=True, show_process=True):
@@ -33,7 +34,6 @@ def apply(image, model, force_cpu=False, batch_size=20, volume_postprocessing=Tr
             batch_size = 1
             device = torch.device('cpu')
     model.to(device)
-
 
     tvolslices, xnew_box = utils.preprocess(inimg_raw, resolution=[256, 256])
     tvolslices[tvolslices > 600] = 600
@@ -77,12 +77,12 @@ def apply(image, model, force_cpu=False, batch_size=20, volume_postprocessing=Tr
 
 
 def get_model(modeltype, modelname):
-    model_url = model_urls[(modeltype, modelname)]
+    model_url,n_classes = model_urls[(modeltype, modelname)]
     state_dict = torch.hub.load_state_dict_from_url(model_url, progress=True, map_location=torch.device('cpu'))
     if modeltype == 'unet':
-        model = UNet(n_classes=3, padding=True,  depth=5, up_mode='upsample', batch_norm=True, residual=False)
+        model = UNet(n_classes=n_classes, padding=True,  depth=5, up_mode='upsample', batch_norm=True, residual=False)
     elif modeltype == 'resunet':
-        model = UNet(n_classes=3, padding=True,  depth=5, up_mode='upsample', batch_norm=True, residual=True)
+        model = UNet(n_classes=n_classes, padding=True,  depth=5, up_mode='upsample', batch_norm=True, residual=True)
     else:
         logging.exception(f"Model {modelname} not known")
     model.load_state_dict(state_dict)
