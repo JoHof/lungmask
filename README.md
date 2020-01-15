@@ -6,7 +6,7 @@ This package applies a pre-trained U-net model for lung segmentation.
 Description and evaluation of the model can be found here:
 * Hofmanninger et al., ---
 
-The model performs segmentation on individual slices, extracts right-left lung seperately includes airpockets, tumors and effusions. The trachea will not be included in the lungmask.
+The model performs segmentation on individual slices, extracts right-left lung seperately includes airpockets, tumors and effusions. The trachea is not included in the lung.
 
 Installation
 ------------

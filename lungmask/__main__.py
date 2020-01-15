@@ -43,9 +43,6 @@ def main():
     logging.info(f'Save result to: {args.output}')
     sys.exit(sitk.WriteImage(result_out, args.output))
 
-    # Do argument parsing here (eg. with argparse) and anything else
-    # you want your project to do.
-
 
 if __name__ == "__main__":
     print('called as script')

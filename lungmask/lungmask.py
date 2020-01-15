@@ -14,7 +14,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 warnings.filterwarnings("ignore",category=UserWarning)
 
 # stores urls and number of classes of the models
-model_urls = {('unet','R231'): ('http://www.cir.meduniwien.ac.at/downloads/unet_r231-28d0c9ef.pth',3),
+model_urls = {('unet','R231'): ('http://www.cir.meduniwien.ac.at/downloads/unet_r231-d5d2fc3d.pth',3),
 ('unet','LTRCLobes'): ('http://www.cir.meduniwien.ac.at/downloads/unet_ltrclobes-3a07043d.pth',6)}
 
 
