@@ -1,33 +1,61 @@
-Automated lung segmentation in CT under presence of severe pathologies
-================================================================================
+# Automated lung segmentation in CT under presence of severe pathologies
 
-This package applies a pre-trained U-net model for lung segmentation. 
+This package provides pre-trained U-net models for lung segmentation. For now, two models are available:
 
-Description and evaluation of the model can be found here:
+- U-net(R231): This model was trained on a large and diverse dataset that covers a wide range of visual variabiliy. The model performs segmentation on individual slices, extracts right-left lung seperately includes airpockets, tumors and effusions. The trachea will not be included in the lung segmentation.
+
+- U-net(LTRCLobes): This model was trained on a subset of the LTRC dataset. The model performs segmentation of individual lung-lobes but yields limited performance with respect to very dense pathologies. 
+
+
+
+
+Detailed description of the dataset used and a thorough evaluation of the U-net(R231) model can be found here:
 * Hofmanninger et al., ---
 
-The model performs segmentation on individual slices, extracts right-left lung seperately includes airpockets, tumors and effusions. The trachea is not included in the lung.
 
-Installation
-------------
+## Installation
 ```
 pip install git+https://github.com/JoHof/lungmask
 ```
 
-Usage
------
-As a command line tool:
+## Usage
+### As a command line tool:
 ```
-lungmask.py [inputpath] [outputpath]
+lungmask INPUT OUTPUT
 ```
-If inputpath points to a file, the file will be loaded. If input path points to a directory, the directory is searched for DICOM series. The largest volume found (in terms of number of voxels) will be used to compute the lungmask. It is recommended to provide a directory with a single series.
+If INPUT points to a file, the file will be processed. If INPUT points to a directory, the directory will be searched for DICOM series. The largest volume found (in terms of number of voxels) will be used to compute the lungmask. OUTPUT is the output filename. All ITK formats are supported.
 
-Type:
-```
-lungmask.py -h
-```
-for additional options.
+Choose a model:
+The U-net(R231) will be used as default. To change inference to an alternative model, e.g. LTRCLobes type:
 
-as a python module:
+```
+lungmask INPUT OUTPUT --modeltype unet --modelname LTRCLobes
+```
+
+For additional options type:
+```
+lungmask -h
+```
+
+### Use lungmask as a python module:
+
+```
+import lungmask from lungmask
+
+OUTPUT = lungmask.apply(INPUT)
+```
+INPUT has to be a SimpleITK object.
+
+To change the model use:
+```
+import lungmask from lungmask
+
+model = lungmask.get_model('unet','LTRCLobes')
+OUTPUT = lungmask.apply(INPUT, model)
+
+
+
+
+
 
  
