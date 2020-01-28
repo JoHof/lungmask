@@ -8,6 +8,7 @@ import SimpleITK as sitk
 import pydicom as pyd
 import logging
 from tqdm import tqdm
+import fill_voids
 
 
 def preprocess(img, label=None, resolution = [192,192]):
@@ -177,4 +178,77 @@ def get_input_image(path):
         input_image = dicom_vols[np.argmax([np.prod(v.GetSize()) for v in dicom_vols], axis=0)]
     return input_image
 
+
+def postrocessing(label_image, min_area):
+    '''some post-processing mapping small label patches to the neighbout whith which they share the
+        largest border. All connected components smaller than min_area will be removed
+    '''
+    # cleaning overall connected components and fill holes
+    regionmask = skimage.measure.label(label_image>0)
+    regions = skimage.measure.regionprops(regionmask)
+    resizes = np.asarray([x.area for x in regions])
+    m = len(resizes)
+    ix = np.zeros((m,), dtype=np.uint8)
+    ix[resizes > min_area] = 1
+    ix = np.concatenate([[0, ], ix])
+    cleaned = ix[regionmask]
+
+    outmask = np.zeros(cleaned.shape, dtype=np.uint8)
+    for i in np.unique(label_image)[1:]:
+        outmask[fill_voids.fill((label_image == i) & (cleaned>0))] = i
+
+    # merge small components to neighbours
+    regionmask = skimage.measure.label(outmask)
+    origlabels = np.unique(outmask)
+    origlabels_maxsub = np.zeros((max(origlabels)+1,), dtype=np.uint32)  # will hold the largest component for a label
+    regions = skimage.measure.regionprops(regionmask, outmask)
+    regions.sort(key = lambda x: x.area)
+    regionlabels = [x.label for x in regions]
+
+    # will hold mapping from regionlabels to original labels
+    region_to_lobemap = np.zeros((len(regionlabels)+1,), dtype=np.uint8)
+    for r in regions:
+        if r.area > origlabels_maxsub[r.max_intensity]:
+            origlabels_maxsub[r.max_intensity] = r.area
+            region_to_lobemap[r.label] = r.max_intensity
+
+    for r in regions:
+        if r.area < origlabels_maxsub[r.max_intensity]:
+            bb = bbox_3D(regionmask == r.label)
+            sub = regionmask[bb[0]:bb[1],bb[2]:bb[3],bb[4]:bb[5]]
+            dil = ndimage.binary_dilation(sub == r.label)
+            neighbours, counts = np.unique(sub[dil], return_counts=True)
+            mapto = r.label
+            maxmap = 0
+            myarea = 0
+            for ix, n in enumerate(neighbours):
+                if n != 0 and n != r.label and counts[ix] > maxmap:
+                    maxmap = counts[ix]
+                    mapto = n
+                    myarea = r.area
+            regionmask[regionmask == r.label] = mapto
+            if regions[regionlabels.index(mapto)].area == origlabels_maxsub[regions[regionlabels.index(mapto)].max_intensity]:
+                origlabels_maxsub[regions[regionlabels.index(mapto)].max_intensity] += myarea
+            regions[regionlabels.index(mapto)].__dict__['_cache']['area'] += myarea
+
+    return region_to_lobemap[regionmask]
+
+
+def bbox_3D(labelmap, margin=2):
+    shape = labelmap.shape
+    r = np.any(labelmap, axis=(1, 2))
+    c = np.any(labelmap, axis=(0, 2))
+    z = np.any(labelmap, axis=(0, 1))
+
+    rmin, rmax = np.where(r)[0][[0, -1]]
+    rmin -= margin if rmin >= margin else rmin
+    rmax += margin if rmax <= shape[0]-margin else rmax
+    cmin, cmax = np.where(c)[0][[0, -1]]
+    cmin -= margin if cmin >= margin else cmin
+    cmax += margin if cmax <= shape[1]-margin else cmax
+    zmin, zmax = np.where(z)[0][[0, -1]]
+    zmin -= margin if zmin >= margin else zmin
+    zmax += margin if zmax <= shape[2]-margin else zmax
+
+    return rmin, rmax, cmin, cmax, zmin, zmax
 

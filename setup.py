@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="lungmask",
-    version="0.1",
+    version="0.2",
     author="Johannes Hofmanninger",
     author_email="johannes.hofmanninger@meduniwien.ac.at",
-    description="Package for automated lung mask generation in CT",
+    description="Package for automated lung segmentation in CT",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/JoHof/lungmask",
@@ -26,11 +26,12 @@ setuptools.setup(
         'SimpleITK',
         'tqdm',
         'scikit-image',
+        'fill_voids'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GPLv3",
-        "Operating System :: OS Independent",
+        "Operating System :: OS Independent"
     ],
     python_requires='>=3.6',
 )

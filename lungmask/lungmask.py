@@ -2,9 +2,7 @@ import numpy as np
 import torch
 from . import utils
 import SimpleITK as sitk
-import skimage
 from .resunet import UNet
-import scipy.ndimage as ndimage
 import warnings
 import sys
 from tqdm import tqdm
@@ -18,7 +16,10 @@ model_urls = {('unet','R231'): ('http://www.cir.meduniwien.ac.at/downloads/unet_
 ('unet','LTRCLobes'): ('http://www.cir.meduniwien.ac.at/downloads/unet_ltrclobes-3a07043d.pth',6)}
 
 
-def apply(image, model, force_cpu=False, batch_size=20, volume_postprocessing=True, show_process=True):
+def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessing=True, show_process=True):
+
+    if model is None:
+        model = get_model('unet', 'R231')
 
     voxvol = np.prod(image.GetSpacing())
     inimg_raw = sitk.GetArrayFromImage(image)
@@ -50,24 +51,10 @@ def apply(image, model, force_cpu=False, batch_size=20, volume_postprocessing=Tr
             pls = torch.max(prediction,1)[1].detach().cpu().numpy().astype(np.uint8)
             timage_res = np.vstack((timage_res, pls))
 
+    # postprocessing includes removal of small connected components, hole filling and mapping of small components to
+    # neighbors
     if volume_postprocessing:
-        area = 25000/voxvol
-        regionmask = skimage.measure.label(np.asarray(timage_res).astype(np.int32))
-        regions = skimage.measure.regionprops(regionmask)
-        resizes = np.asarray([x.area for x in regions])
-        m = len(resizes)
-        ix = np.zeros((m,), dtype=np.uint8)
-        ix[resizes > area] = 1
-        ix = np.concatenate([[0, ], ix])
-        outmask = ix[regionmask]
-
-        outmaskr = (timage_res==1) & (outmask>0)
-        outmaskl = (timage_res==2) & (outmask>0)
-        outmaskr = ndimage.binary_fill_holes(outmaskr)
-        outmaskl = ndimage.binary_fill_holes(outmaskl)
-        outmask[outmaskl] = 2
-        outmask[outmaskr] = 1
-        outmask = outmask.astype(np.uint8)
+        outmask = utils.postrocessing(timage_res, 25000/voxvol)
     else:
         outmask = timage_res
 
@@ -88,4 +75,5 @@ def get_model(modeltype, modelname):
     model.load_state_dict(state_dict)
     model.eval()
     return model
+
 
