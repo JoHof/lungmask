@@ -40,7 +40,7 @@ lungmask -h
 ### Use lungmask as a python module:
 
 ```
-import lungmask from lungmask
+from lungmask import lungmask
 
 OUTPUT = lungmask.apply(INPUT)  # default model is U-net(R231)
 ```
@@ -48,14 +48,11 @@ INPUT has to be a SimpleITK object.
 
 To change the model use:
 ```
-import lungmask from lungmask
+from lungmask import lungmask
 
 model = lungmask.get_model('unet','LTRCLobes')
 OUTPUT = lungmask.apply(INPUT, model)
-
-
-
-
+```
 
 
  
