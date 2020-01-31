@@ -9,9 +9,12 @@ This package provides pre-trained U-net models for lung segmentation. For now, t
 ![alt text](figures/figure.png "Result examples")
 **Examples of the two models applied**. **Left:** U-net(R231), will distinguish between left and right lung and include very dense areas such as effusions or tumor (second row). **Right:** U-net(LTRLobes), will distinguish between lung lobes but will not include very dense areas.
 
-Detailed description of the dataset used and a thorough evaluation of the U-net(R231) model can be found here:
-* Hofmanninger et al., ---
+## Referencing and citing
+If you use this code or the trained model in your work please refere to:
 
+>Johannes Hofmanninger, Forian Prayer, Jeanny Pan, Sebastian Röhrich, Helmut Prosch and Georg Langs. "Automatic lung segmentation in routine imaging is a data diversity problem, not a methodology problem".
+
+The paper contains a detailed description of the dataset used, a thorough evaluation of the U-net(R231) model, and comparison to reference methods.
 
 ## Installation
 ```
