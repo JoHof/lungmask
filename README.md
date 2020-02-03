@@ -14,7 +14,7 @@ For more exciting research on lung CT data, checkout the website of our research
 https://www.cir.meduniwien.ac.at/research/lung/
 
 ## Referencing and citing
-If you use this code or one of the trained models in your work please refere to:
+If you use this code or one of the trained models in your work please refer to:
 
 >Johannes Hofmanninger, Forian Prayer, Jeanny Pan, Sebastian Röhrich, Helmut Prosch and Georg Langs. "Automatic lung segmentation in routine imaging is a data diversity problem, not a methodology problem". 1 2020, https://arxiv.org/abs/2001.11767
 
