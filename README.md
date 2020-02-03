@@ -9,9 +9,12 @@ This package provides pre-trained U-net models for lung segmentation. For now, t
 **Examples of the two models applied**. **Left:** U-net(R231), will distinguish between left and right lung and include very dense areas such as effusions or tumor (second row). **Right:** U-net(LTRLobes), will distinguish between lung lobes but will not include very dense areas.
 ![alt text](figures/figure.png "Result examples")
 
-Detailed description of the dataset used and a thorough evaluation of the U-net(R231) model can be found here:
-* Hofmanninger et al., ---
+## Referencing and citing
+If you use this code or the trained model in your work please refere to:
 
+>Johannes Hofmanninger, Forian Prayer, Jeanny Pan, Sebastian Röhrich, Helmut Prosch and Georg Langs. "Automatic lung segmentation in routine imaging is a data diversity problem, not a methodology problem". 1 2020, https://arxiv.org/abs/2001.11767
+
+The paper contains a detailed description of the dataset used, a thorough evaluation of the U-net(R231) model, and comparison to reference methods.
 
 ## Installation
 ```
@@ -40,22 +43,19 @@ lungmask -h
 ### Use lungmask as a python module:
 
 ```
-import lungmask from lungmask
+from lungmask import lungmask
+import SimpleITK as sitk
 
-OUTPUT = lungmask.apply(INPUT)  # default model is U-net(R231)
+input_image = sitk.ReadImage(INPUT)
+segmentation = lungmask.apply(input_image)  # default model is U-net(R231)
 ```
-INPUT has to be a SimpleITK object.
+input_image has to be a SimpleITK object.
 
-To change the model use:
+Load an alternative model like so:
 ```
-import lungmask from lungmask
-
 model = lungmask.get_model('unet','LTRCLobes')
-OUTPUT = lungmask.apply(INPUT, model)
-
-
-
-
+segmentation = lungmask.apply(input_image, model)
+```
 
 
  
