@@ -32,8 +32,8 @@ lungmask INPUT OUTPUT
 ```
 If INPUT points to a file, the file will be processed. If INPUT points to a directory, the directory will be searched for DICOM series. The largest volume found (in terms of number of voxels) will be used to compute the lungmask. OUTPUT is the output filename. All ITK formats are supported.
 
-Choose a model:
-The U-net(R231) will be used as default. To change inference to an alternative model, e.g. LTRCLobes type:
+Choose a model: <br/>
+The U-net(R231) will be used as default. However, you can specify an alternative model such as LTRCLobes...
 
 ```
 lungmask INPUT OUTPUT --modeltype unet --modelname LTRCLobes
