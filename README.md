@@ -18,7 +18,7 @@ If you use this code or one of the trained models in your work please refere to:
 
 >Johannes Hofmanninger, Forian Prayer, Jeanny Pan, Sebastian Röhrich, Helmut Prosch and Georg Langs. "Automatic lung segmentation in routine imaging is a data diversity problem, not a methodology problem". 1 2020, https://arxiv.org/abs/2001.11767
 
-This paper contains a detailed description of the dataset used, a thorough evaluation of the U-net(R231) model, and comparison to reference methods.
+This paper contains a detailed description of the dataset used, a thorough evaluation of the U-net(R231) model, and a comparison to reference methods.
 
 ## Installation
 ```
