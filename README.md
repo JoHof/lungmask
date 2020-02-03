@@ -7,7 +7,11 @@ This package provides pre-trained U-net models for lung segmentation. For now, t
 - U-net(LTRCLobes): This model was trained on a subset of the LTRC dataset. The model performs segmentation of individual lung-lobes but yields limited performance with respect to very dense pathologies. 
 
 **Examples of the two models applied**. **Left:** U-net(R231), will distinguish between left and right lung and include very dense areas such as effusions (third row), tumor or sever fibrosis (fourth row) . **Right:** U-net(LTRLobes), will distinguish between lung lobes but will not include very dense areas.
+
 ![alt text](figures/figure.png "Result examples")
+
+For more exciting research on lung CT data, checkout the website of our research group:
+https://www.cir.meduniwien.ac.at/research/lung/
 
 ## Referencing and citing
 If you use this code or one of the trained models in your work please refere to:
