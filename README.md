@@ -44,7 +44,7 @@ For additional options type:
 lungmask -h
 ```
 
-### Use lungmask as a python module:
+### As a python module:
 
 ```
 from lungmask import lungmask
