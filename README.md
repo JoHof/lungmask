@@ -24,6 +24,10 @@ This paper contains a detailed description of the dataset used, a thorough evalu
 ```
 pip install git+https://github.com/JoHof/lungmask
 ```
+On Windows, depending on your setup, it may be necessary to install torch beforehand: https://pytorch.org
+
+## Runtine and GPU support
+Runtime between CPU only and GPU supported inference varies greatly. Using the GPU, processing a volume takes only several seconds, using the CPU only will take several minutes. Tu make use of the GPU make sure that your torch installation has CUDA support. In case of cuda out of memory errors reduce the batchsize to 1 with the optional argument ```--batchsize 1```
 
 ## Usage
 ### As a command line tool:
