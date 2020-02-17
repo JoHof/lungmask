@@ -40,7 +40,7 @@ Choose a model: <br/>
 The U-net(R231) will be used as default. However, you can specify an alternative model such as LTRCLobes...
 
 ```
-lungmask INPUT OUTPUT --modeltype unet --modelname LTRCLobes
+lungmask INPUT OUTPUT --modelname LTRCLobes
 ```
 
 For additional options type:
