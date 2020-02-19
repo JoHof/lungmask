@@ -10,8 +10,8 @@ This package provides pre-trained U-net models for lung segmentation. For now, t
 
 ![alt text](figures/figure.png "Result examples")
 
-For more exciting research on lung CT data, checkout the website of our research group:
-https://www.cir.meduniwien.ac.at/research/lung/
+<!--For more exciting research on lung CT data, checkout the website of our research group:
+https://www.cir.meduniwien.ac.at/research/lung/-->
 
 ## Referencing and citing
 If you use this code or one of the trained models in your work please refer to:
