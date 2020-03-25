@@ -1,6 +1,6 @@
 # Automated lung segmentation in CT under presence of severe pathologies
 
-This package provides pre-trained U-net models for lung segmentation. For now, two models are available:
+This package provides trained U-net models for lung segmentation. For now, two models are available:
 
 - U-net(R231): This model was trained on a large and diverse dataset that covers a wide range of visual variabiliy. The model performs segmentation on individual slices, extracts right-left lung seperately includes airpockets, tumors and effusions. The trachea will not be included in the lung segmentation.
 
