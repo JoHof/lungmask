@@ -1,10 +1,13 @@
 # Automated lung segmentation in CT under presence of severe pathologies
 
-This package provides trained U-net models for lung segmentation. For now, two models are available:
+This package provides trained U-net models for lung segmentation. For now, three models are available:
 
 - U-net(R231): This model was trained on a large and diverse dataset that covers a wide range of visual variabiliy. The model performs segmentation on individual slices, extracts right-left lung seperately includes airpockets, tumors and effusions. The trachea will not be included in the lung segmentation.
 
 - U-net(LTRCLobes): This model was trained on a subset of the LTRC dataset. The model performs segmentation of individual lung-lobes but yields limited performance when dense pathologies are present. 
+
+- U-net(R231CovidWeb):
+[Look here for details](##-covid-19-web)
 
 **Examples of the two models applied**. **Left:** U-net(R231), will distinguish between left and right lung and include very dense areas such as effusions (third row), tumor or severe fibrosis (fourth row) . **Right:** U-net(LTRLobes), will distinguish between lung lobes but will not include very dense areas.
 
@@ -68,5 +71,11 @@ segmentation = lungmask.apply(input_image, model)
 ### Limitations
 The model works on full slices only. The slice to process has to show the full lung and the lung has to be surrounded by tissue in order to get segmented. However, the model is quite stable to cases with a cropped field of view as long as the lung is surrounded by tissue. 
 
+### COVID-19 Web
+```
+lungmask INPUT OUTPUT --modelname R231CovidWeb
+```
+The regular U-net(R231) model works very well for COVID-19 CT scans. However, collections of slices and case reports from the web are often cropped, annotated or encoded in regular image formats so that the original hounsfield unit (HU) values can only be estimated. The training data of the U-net(R231CovidWeb) model was augmented with COVID-19 slices that were mapped back from regular imaging formats to HU. The data was collected and prepared by MedSeg (http://medicalsegmentation.com/covid19/). While the regular U-net(231) showed very good resutls for this images there may be cases for which this model will yield slighty improved segmentations. Note that you have to map images back to HU when using images from the web. This blog post describes how you can do that (https://medium.com/@hbjenssen/covid-19-radiology-data-collection-and-preparation-for-artificial-intelligence-4ecece97bb5b)
+![alt text](figures/example_covid.png "COVID examples")
 
  
