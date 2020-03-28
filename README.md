@@ -65,5 +65,8 @@ model = lungmask.get_model('unet','LTRCLobes')
 segmentation = lungmask.apply(input_image, model)
 ```
 
+### Limitations
+The model works on full slices only. The slice to process has to show the full lung and the lung has to be surrounded by tissue in order to get segmented. However, the model is quite stable to cases with a cropped field of view as long as the lung is surrounded by tissue. 
+
 
  
