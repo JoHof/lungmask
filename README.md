@@ -7,7 +7,7 @@ This package provides trained U-net models for lung segmentation. For now, three
 - U-net(LTRCLobes): This model was trained on a subset of the LTRC dataset. The model performs segmentation of individual lung-lobes but yields limited performance when dense pathologies are present. 
 
 - U-net(R231CovidWeb):
-[Look here for details](###-covid-19-web)
+[Look here for details](###COVID-19-Web)
 
 **Examples of the two models applied**. **Left:** U-net(R231), will distinguish between left and right lung and include very dense areas such as effusions (third row), tumor or severe fibrosis (fourth row) . **Right:** U-net(LTRLobes), will distinguish between lung lobes but will not include very dense areas.
 
@@ -68,10 +68,10 @@ model = lungmask.get_model('unet','LTRCLobes')
 segmentation = lungmask.apply(input_image, model)
 ```
 
-### Limitations
+## Limitations
 The model works on full slices only. The slice to process has to show the full lung and the lung has to be surrounded by tissue in order to get segmented. However, the model is quite stable to cases with a cropped field of view as long as the lung is surrounded by tissue. 
 
-### COVID-19 Web
+## COVID-19 Web
 ```
 lungmask INPUT OUTPUT --modelname R231CovidWeb
 ```
