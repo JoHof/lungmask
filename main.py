@@ -109,6 +109,7 @@ if __name__ == "__main__":
             for path in Path(dir_).rglob('*.dcm'):
                 download_dir, file = os.path.split(str(path.resolve()))
                 break
+            bar.progress(100)
 
             bar2 = st.progress(0)
             model = lungmask.get_model('unet', 'R231CovidWeb')
@@ -142,7 +143,7 @@ if __name__ == "__main__":
                 im = input_nda[i,:,:]   
                 im = Image.fromarray(im).convert('RGB')
                 imgs.append(im.resize((200, 200)))
-                im = output_nda[i,:,:]   
+                im = output_nda[i,:,:] * 128  
                 im = Image.fromarray(im).convert('RGB')
                 imgs.append(im.resize((200, 200)))
 
