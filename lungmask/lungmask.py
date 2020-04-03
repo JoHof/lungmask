@@ -65,14 +65,14 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
 
 
 def get_model(modeltype, modelname):
-    model_url,n_classes = model_urls[(modeltype, modelname)]
+    model_url,n_classes = model_urls[('unet', modelname)]
     state_dict = torch.hub.load_state_dict_from_url(model_url, progress=True, map_location=torch.device('cpu'))
     if modeltype == 'unet':
         model = UNet(n_classes=n_classes, padding=True,  depth=5, up_mode='upsample', batch_norm=True, residual=False)
     elif modeltype == 'resunet':
         model = UNet(n_classes=n_classes, padding=True,  depth=5, up_mode='upsample', batch_norm=True, residual=True)
     else:
-        logging.exception(f"Model {modelname} not known")
+        logging.exception("Model {} not known".format(modelname))
     model.load_state_dict(state_dict)
     model.eval()
     return model

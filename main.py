@@ -11,6 +11,9 @@ import thread
 import pydicom
 import concurrent.futures
 import SimpleITK as sitk
+import logging
+from lungmask import lungmask
+from lungmask import utils
 
 
 def get_files(connection, project, subject, session, scan, resource):
@@ -91,7 +94,7 @@ if __name__ == "__main__":
         res_name = st.selectbox('Resources', sen)
         resource = scan.resources[res_name]
 
-        directory = os.path.join('/tmp/', subject_name, '_', scan_name)
+        directory = os.path.join('/tmp/', subject_name + '_', experiment_name + '_')
         if not os.path.exists(directory):
             os.makedirs(directory)
 
@@ -111,8 +114,16 @@ if __name__ == "__main__":
                     latest_iteration.text('Download {}'.format(prog*100))
                     bar.progress(prog)
 
-            print(data_files)
+            #print(data_files)
+            bar2 = st.progress(0)
+            model = lungmask.get_model('unet', 'R231CovidWeb')
+            input_image = utils.get_input_image(directory)
+            result = lungmask.apply(input_image, model, force_cpu=True, batch_size=20, volume_postprocessing=False)
 
+            result_out = sitk.GetImageFromArray(result)
+            result_out.CopyInformation(input_image)
+            sitk.WriteImage(result_out, utils.get_input_image(os.path.join('/tmp/', subject_name, 'segmentation.nii.gz')))
+            bar2.progress(100)
 
     ##### XNAT connection #####
 

@@ -168,10 +168,10 @@ def read_dicoms(path, primary=True, original=True):
 
 def get_input_image(path):
     if os.path.isfile(path):
-        logging.info(f'Read input: {path}')
+        logging.info('Read input: {}'.format(path))
         input_image = sitk.ReadImage(path)
     else:
-        logging.info(f'Looking for dicoms in {path}')
+        logging.info('Looking for dicoms in {}'.format(path))
         dicom_vols = read_dicoms(path, original=False, primary=False)
         if len(dicom_vols) < 1:
             sys.exit('No dicoms found!')
