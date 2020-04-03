@@ -1,16 +1,13 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-#import pandas as pd
 from sklearn.datasets import load_boston
 from PIL import Image
 
 import sys
 import xnat
 import os
-#import thread
 import pydicom
-#import pydicom_PIL
 import concurrent.futures
 import SimpleITK as sitk
 import logging
@@ -19,7 +16,7 @@ from lungmask import utils
 from pathlib import Path
 import dicom2nifti
 from pydicom.pixel_data_handlers import gdcm_handler, pillow_handler
-#import gdcm
+#import gdcm #big problem in virutal environments
 
 
 def get_files(connection, project, subject, session, scan, resource):
@@ -113,24 +110,13 @@ if __name__ == "__main__":
                 download_dir, file = os.path.split(str(path.resolve()))
                 break
 
-            xnat_files = get_files(session, project, subject, experiment, scan, resource)
-            imgs = []
-            for i, f in enumerate(xnat_files):
-                with f.open() as fin:
-                    ds = pydicom.dcmread(fin, stop_before_pixels=False)
-                    #im = pydicom_PIL.get_PIL_image(ds)
-                    #im = Image.fromarray(ds.pixel_array) # TODO problem with gdcm in virtual environment 
-                    #imgs.append(lung.resize((100, 100)))
-                    prog = (i+1)/float(len(xnat_files)) 
-                    latest_iteration.text('Download {}'.format(prog*100))
-                    bar.progress(prog)
-
-            #st.image(imgs)
-            bar.progress(100)
-
             bar2 = st.progress(0)
             model = lungmask.get_model('unet', 'R231CovidWeb')
             input_image = utils.get_input_image(download_dir)
+            input_nda = sitk.GetArrayFromImage(input_image)
+            print(input_nda.shape)
+            zd, yd, xd = input_nda.shape
+
             print(input_image.GetSpacing())
             spx, spy, spz = input_image.GetSpacing()
             result = lungmask.apply(input_image, model, force_cpu=True, batch_size=20, volume_postprocessing=False)
@@ -140,16 +126,27 @@ if __name__ == "__main__":
             sitk.WriteImage(result_out, os.path.join(dir_, 'segmentation.nii.gz'))
             bar2.progress(100)
 
-            nda = sitk.GetArrayFromImage(result_out)
+            output_nda = sitk.GetArrayFromImage(result_out)
 
-            right = np.count_nonzero(nda==1)*spx*spy*spz
-            left = np.count_nonzero(nda==2)*spx*spy*spz
+            right = np.count_nonzero(output_nda==1)*spx*spy*spz
+            left = np.count_nonzero(output_nda==2)*spx*spy*spz
             print(right)
             print(left)
 
             st.header("Result:")
-            st.header(f'right lung: {right} /mm\N{SUPERSCRIPT THREE}')
-            st.header(f'left lung: {left} /mm\N{SUPERSCRIPT THREE}')
+            st.header(f'right lung: {right} mm\N{SUPERSCRIPT THREE}')
+            st.header(f'left lung: {left} mm\N{SUPERSCRIPT THREE}')
+
+            imgs = []
+            for i in range(zd):
+                im = input_nda[i,:,:]   
+                im = Image.fromarray(im).convert('RGB')
+                imgs.append(im.resize((200, 200)))
+                im = output_nda[i,:,:]   
+                im = Image.fromarray(im).convert('RGB')
+                imgs.append(im.resize((200, 200)))
+
+            st.image(imgs)
 
     ##### XNAT connection #####
 
