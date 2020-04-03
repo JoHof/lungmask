@@ -1,13 +1,14 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
+#import pandas as pd
 from sklearn.datasets import load_boston
 from PIL import Image
 
+import sys
 import xnat
 import os
-import thread
+#import thread
 import pydicom
 import concurrent.futures
 import SimpleITK as sitk
@@ -15,6 +16,7 @@ import logging
 from lungmask import lungmask
 from lungmask import utils
 from pathlib import Path
+import dicom2nifti
 
 
 def get_files(connection, project, subject, session, scan, resource):
@@ -75,29 +77,31 @@ if __name__ == "__main__":
     ##### XNAT connection #####
     with xnat.connect('http://armada.doc.ic.ac.uk/xnat-web-1.7.6', user="admin", password="admin") as session:
 
-        pn = [x.name.decode("utf-8", "replace") for x in session.projects.values()]
+        pn = [x.name for x in session.projects.values()]
         project_name = st.selectbox('Project', pn)
         project = session.projects[project_name]
 
-        sn = [x.label.decode("utf-8", "replace") for x in project.subjects.values()]
+        sn = [x.label for x in project.subjects.values()]
         subject_name = st.selectbox('Subject', sn)
         subject = project.subjects[subject_name]
 
-        en = [x.label.decode("utf-8", "replace") for x in subject.experiments.values()]
+        en = [x.label for x in subject.experiments.values()]
         experiment_name = st.selectbox('Session', en)
         experiment = subject.experiments[experiment_name]
 
-        sen = [x.type.decode("utf-8", "replace") for x in experiment.scans.values()]
+        sen = [x.type for x in experiment.scans.values()]
         scan_name = st.selectbox('Scan', sen)
         scan = experiment.scans[scan_name]
 
-        sen = [x.label.decode("utf-8", "replace") for x in scan.resources.values()]
+        sen = [x.label for x in scan.resources.values()]
         res_name = st.selectbox('Resources', sen)
         resource = scan.resources[res_name]
 
         #directory = os.path.join('/tmp/', subject_name + '_', experiment_name + '_')
         #if not os.path.exists(directory):
             #os.makedirs(directory)
+
+        print(sys.version)
 
         if st.button('download and analyse'):
             bar = st.progress(0)
@@ -125,6 +129,10 @@ if __name__ == "__main__":
                     bar.progress(prog)
             '''
             #print(data_files)
+            #out = os.path.join(dir_, 'raw_image.nii.gz')
+            #ret = dicom2nifti.dicom_series_to_nifti(download_dir, output_file=out, reorient_nifti=True)
+            #print(ret)
+
             bar2 = st.progress(0)
             model = lungmask.get_model('unet', 'R231CovidWeb')
             input_image = utils.get_input_image(download_dir)
