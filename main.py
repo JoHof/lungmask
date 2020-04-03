@@ -143,7 +143,7 @@ if __name__ == "__main__":
                 im = input_nda[i,:,:]   
                 im = Image.fromarray(im).convert('RGB')
                 imgs.append(im.resize((200, 200)))
-                im = output_nda[i,:,:] * 128  
+                im = output_nda[i,:,:] * 255  
                 im = Image.fromarray(im).convert('RGB')
                 imgs.append(im.resize((200, 200)))
 
