@@ -32,8 +32,10 @@ def get_files(connection, project, subject, session, scan, resource):
 
 
 if __name__ == "__main__":
-    lung = Image.open("lung.png").resize((500, 500))
-    seg = Image.open("seg.png").resize((500, 500))
+
+    print(sys.version)
+    #lung = Image.open("lung.png").resize((500, 500))
+    #seg = Image.open("seg.png").resize((500, 500))
 
     #### Page Header #####
     # st.title("CoCaCoLA - The Cool Calculator for Corona Lung Assessment")
@@ -73,6 +75,7 @@ if __name__ == "__main__":
 
 
     ##### File Selector #####
+    #TODO upload of several (DICOM) files needs the streamlit dev version, which is difficult to use
     #st.header("Please Upload the Chest CT DICOM here")
     #st.file_uploader(label="", type=["dcm", "dicom"])
     ##### File Selector #####
@@ -100,13 +103,7 @@ if __name__ == "__main__":
         res_name = st.selectbox('Resources', sen)
         resource = scan.resources[res_name]
 
-        #directory = os.path.join('/tmp/', subject_name + '_', experiment_name + '_')
-        #if not os.path.exists(directory):
-            #os.makedirs(directory)
-
-        print(sys.version)
-
-        if st.button('download'):
+        if st.button('download and analyse'):
             latest_iteration = st.empty()
             bar = st.progress(0)
             dir_ = os.path.join('/tmp/', subject_name)
@@ -131,29 +128,28 @@ if __name__ == "__main__":
             #st.image(imgs)
             bar.progress(100)
 
-            if st.button('analyse'):
-                bar2 = st.progress(0)
-                model = lungmask.get_model('unet', 'R231CovidWeb')
-                input_image = utils.get_input_image(download_dir)
-                print(input_image.GetSpacing())
-                spx, spy, spz = input_image.GetSpacing()
-                result = lungmask.apply(input_image, model, force_cpu=True, batch_size=20, volume_postprocessing=False)
+            bar2 = st.progress(0)
+            model = lungmask.get_model('unet', 'R231CovidWeb')
+            input_image = utils.get_input_image(download_dir)
+            print(input_image.GetSpacing())
+            spx, spy, spz = input_image.GetSpacing()
+            result = lungmask.apply(input_image, model, force_cpu=True, batch_size=20, volume_postprocessing=False)
 
-                result_out = sitk.GetImageFromArray(result)
-                result_out.CopyInformation(input_image)
-                sitk.WriteImage(result_out, os.path.join(dir_, 'segmentation.nii.gz'))
-                bar2.progress(100)
+            result_out = sitk.GetImageFromArray(result)
+            result_out.CopyInformation(input_image)
+            sitk.WriteImage(result_out, os.path.join(dir_, 'segmentation.nii.gz'))
+            bar2.progress(100)
 
-                nda = sitk.GetArrayFromImage(result_out)
+            nda = sitk.GetArrayFromImage(result_out)
 
-                right = np.count_nonzero(nda==1)*spx*spy*spz
-                left = np.count_nonzero(nda==2)*spx*spy*spz
-                print(right)
-                print(left)
+            right = np.count_nonzero(nda==1)*spx*spy*spz
+            left = np.count_nonzero(nda==2)*spx*spy*spz
+            print(right)
+            print(left)
 
-                st.header("Result:")
-                st.header(f'right lung: {right} /mm\N{SUPERSCRIPT THREE}')
-                st.header(f'left lung: {left} /mm\N{SUPERSCRIPT THREE}')
+            st.header("Result:")
+            st.header(f'right lung: {right} /mm\N{SUPERSCRIPT THREE}')
+            st.header(f'left lung: {left} /mm\N{SUPERSCRIPT THREE}')
 
     ##### XNAT connection #####
 
