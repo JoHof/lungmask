@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
             result_out = sitk.GetImageFromArray(result)
             result_out.CopyInformation(input_image)
-            sitk.WriteImage(result_out, os.path.join(dir_, 'segmentation.nii.gz'))
+            sitk.WriteImage(result_out, os.path.join(dir_, 'segmentation.nii.gz')) #TODO make downloadable
             bar2.progress(100)
 
             output_nda = sitk.GetArrayFromImage(result_out)
@@ -148,14 +148,6 @@ if __name__ == "__main__":
                 imgs.append(im.resize((200, 200)))
 
             st.image(imgs)
-
     ##### XNAT connection #####
 
-    ##### Output Area #####
-    #st.header("Result:")
-    #st.subheader("Probability of Covid-19 infection=96.5%")
-    #st.subheader("Covid-19 severity index: 1")
-
-    ##### Output Area #####
-    #st.image([lung, seg])
 
