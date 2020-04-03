@@ -14,6 +14,7 @@ import SimpleITK as sitk
 import logging
 from lungmask import lungmask
 from lungmask import utils
+from pathlib import Path
 
 
 def get_files(connection, project, subject, session, scan, resource):
@@ -94,13 +95,22 @@ if __name__ == "__main__":
         res_name = st.selectbox('Resources', sen)
         resource = scan.resources[res_name]
 
-        directory = os.path.join('/tmp/', subject_name + '_', experiment_name + '_')
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+        #directory = os.path.join('/tmp/', subject_name + '_', experiment_name + '_')
+        #if not os.path.exists(directory):
+            #os.makedirs(directory)
 
         if st.button('download and analyse'):
-            xnat_files = get_files(session, project, subject, experiment, scan, resource)
+            bar = st.progress(0)
+            dir_ = os.path.join('/tmp/', subject_name)
+            scan.download_dir(dir_, verbose=True)
+            download_dir = ''
+            for path in Path(dir_).rglob('*.dcm'):
+                download_dir, file = os.path.split(str(path.resolve()))
+                break
+            bar.progress(100)
 
+            '''
+            xnat_files = get_files(session, project, subject, experiment, scan, resource)
             latest_iteration = st.empty()
             bar = st.progress(0)
 
@@ -113,11 +123,11 @@ if __name__ == "__main__":
                     prog = (i+1)/float(len(xnat_files)) 
                     latest_iteration.text('Download {}'.format(prog*100))
                     bar.progress(prog)
-
+            '''
             #print(data_files)
             bar2 = st.progress(0)
             model = lungmask.get_model('unet', 'R231CovidWeb')
-            input_image = utils.get_input_image(directory)
+            input_image = utils.get_input_image(download_dir)
             result = lungmask.apply(input_image, model, force_cpu=True, batch_size=20, volume_postprocessing=False)
 
             result_out = sitk.GetImageFromArray(result)
