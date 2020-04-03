@@ -22,7 +22,6 @@ def get_files(connection, project, subject, session, scan, resource):
     return files
 
 
-
 if __name__ == "__main__":
     lung = Image.open("lung.png").resize((500, 500))
     seg = Image.open("seg.png").resize((500, 500))
@@ -92,6 +91,10 @@ if __name__ == "__main__":
         res_name = st.selectbox('Resources', sen)
         resource = scan.resources[res_name]
 
+        directory = os.path.join('/tmp/', subject_name, '_', scan_name)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
         if st.button('download and analyse'):
             xnat_files = get_files(session, project, subject, experiment, scan, resource)
 
@@ -101,7 +104,9 @@ if __name__ == "__main__":
             data_files = []
             for i, f in enumerate(xnat_files):
                 with f.open() as fin:
-                    data_files.append(pydicom.dcmread(fin, stop_before_pixels=False))
+                    ds = pydicom.dcmread(fin, stop_before_pixels=False)
+                    data_files.append(ds)
+                    ds.save_as(os.path.join(directory,'{}.dcm'.format(i)))
                     prog = (i+1)/float(len(xnat_files)) 
                     latest_iteration.text('Download {}'.format(prog*100))
                     bar.progress(prog)
