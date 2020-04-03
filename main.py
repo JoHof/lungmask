@@ -10,6 +10,7 @@ import xnat
 import os
 #import thread
 import pydicom
+#import pydicom_PIL
 import concurrent.futures
 import SimpleITK as sitk
 import logging
@@ -17,6 +18,8 @@ from lungmask import lungmask
 from lungmask import utils
 from pathlib import Path
 import dicom2nifti
+from pydicom.pixel_data_handlers import gdcm_handler, pillow_handler
+#import gdcm
 
 
 def get_files(connection, project, subject, session, scan, resource):
@@ -103,7 +106,8 @@ if __name__ == "__main__":
 
         print(sys.version)
 
-        if st.button('download and analyse'):
+        if st.button('download'):
+            latest_iteration = st.empty()
             bar = st.progress(0)
             dir_ = os.path.join('/tmp/', subject_name)
             scan.download_dir(dir_, verbose=True)
@@ -111,44 +115,53 @@ if __name__ == "__main__":
             for path in Path(dir_).rglob('*.dcm'):
                 download_dir, file = os.path.split(str(path.resolve()))
                 break
-            bar.progress(100)
 
-            '''
             xnat_files = get_files(session, project, subject, experiment, scan, resource)
-            latest_iteration = st.empty()
-            bar = st.progress(0)
-
-            data_files = []
+            imgs = []
             for i, f in enumerate(xnat_files):
                 with f.open() as fin:
                     ds = pydicom.dcmread(fin, stop_before_pixels=False)
-                    data_files.append(ds)
-                    ds.save_as(os.path.join(directory,'{}.dcm'.format(i)))
+                    #im = pydicom_PIL.get_PIL_image(ds)
+                    #im = Image.fromarray(ds.pixel_array) # TODO problem with gdcm in virtual environment 
+                    #imgs.append(lung.resize((100, 100)))
                     prog = (i+1)/float(len(xnat_files)) 
                     latest_iteration.text('Download {}'.format(prog*100))
                     bar.progress(prog)
-            '''
-            #print(data_files)
-            #out = os.path.join(dir_, 'raw_image.nii.gz')
-            #ret = dicom2nifti.dicom_series_to_nifti(download_dir, output_file=out, reorient_nifti=True)
-            #print(ret)
 
-            bar2 = st.progress(0)
-            model = lungmask.get_model('unet', 'R231CovidWeb')
-            input_image = utils.get_input_image(download_dir)
-            result = lungmask.apply(input_image, model, force_cpu=True, batch_size=20, volume_postprocessing=False)
+            #st.image(imgs)
+            bar.progress(100)
 
-            result_out = sitk.GetImageFromArray(result)
-            result_out.CopyInformation(input_image)
-            sitk.WriteImage(result_out, utils.get_input_image(os.path.join('/tmp/', subject_name, 'segmentation.nii.gz')))
-            bar2.progress(100)
+            if st.button('analyse'):
+                bar2 = st.progress(0)
+                model = lungmask.get_model('unet', 'R231CovidWeb')
+                input_image = utils.get_input_image(download_dir)
+                print(input_image.GetSpacing())
+                spx, spy, spz = input_image.GetSpacing()
+                result = lungmask.apply(input_image, model, force_cpu=True, batch_size=20, volume_postprocessing=False)
+
+                result_out = sitk.GetImageFromArray(result)
+                result_out.CopyInformation(input_image)
+                sitk.WriteImage(result_out, os.path.join(dir_, 'segmentation.nii.gz'))
+                bar2.progress(100)
+
+                nda = sitk.GetArrayFromImage(result_out)
+
+                right = np.count_nonzero(nda==1)*spx*spy*spz
+                left = np.count_nonzero(nda==2)*spx*spy*spz
+                print(right)
+                print(left)
+
+                st.header("Result:")
+                st.header(f'right lung: {right} /mm\N{SUPERSCRIPT THREE}')
+                st.header(f'left lung: {left} /mm\N{SUPERSCRIPT THREE}')
 
     ##### XNAT connection #####
 
     ##### Output Area #####
-    st.header("Result:")
-    st.subheader("Probability of Covid-19 infection=96.5%")
-    st.subheader("Covid-19 severity index: 1")
+    #st.header("Result:")
+    #st.subheader("Probability of Covid-19 infection=96.5%")
+    #st.subheader("Covid-19 severity index: 1")
 
     ##### Output Area #####
-    st.image([lung, seg])
+    #st.image([lung, seg])
+
