@@ -55,7 +55,7 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
     # postprocessing includes removal of small connected components, hole filling and mapping of small components to
     # neighbors
     if volume_postprocessing:
-        outmask = utils.postrocessing(timage_res, 25000/voxvol)
+        outmask = utils.postrocessing(timage_res)
     else:
         outmask = timage_res
 
