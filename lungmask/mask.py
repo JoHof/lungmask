@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from . import utils
+from lungmask import utils
 import SimpleITK as sitk
 from .resunet import UNet
 import warnings
