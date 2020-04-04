@@ -56,7 +56,7 @@ def crop_and_resize(img,mask=None,width=192,height=192):
     bmask = simple_bodymask(img)
 #     img[bmask==0] = -1024 # this line removes background outside of the lung.
                             #However, it has been shown problematic with narrow circular field of views that touch the lung.
-                            #Possibly doning more harm than help
+                            #Possibly doing more harm than help
     reg = skimage.measure.regionprops(skimage.measure.label(bmask))
     if len(reg)>0:
         bbox = reg[0].bbox
@@ -181,23 +181,26 @@ def get_input_image(path):
     return input_image
 
 
-def postrocessing(label_image, min_area):
+def postrocessing(label_image):
     '''some post-processing mapping small label patches to the neighbout whith which they share the
         largest border. All connected components smaller than min_area will be removed
     '''
-    # cleaning overall connected components and fill holes
+
+    # cleaning overall connected
     regionmask = skimage.measure.label(label_image>0)
     regions = skimage.measure.regionprops(regionmask)
     resizes = np.asarray([x.area for x in regions])
     m = len(resizes)
     ix = np.zeros((m,), dtype=np.uint8)
-    ix[resizes > min_area] = 1
+    minsize = 0
+    if m > 2:
+        minsize = np.sort(resizes)[-3]
+    ix[resizes > minsize] = 1
     ix = np.concatenate([[0, ], ix])
     cleaned = ix[regionmask]
 
-    outmask = np.zeros(cleaned.shape, dtype=np.uint8)
-    for i in np.unique(label_image)[1:]:
-        outmask[fill_voids.fill((label_image == i) & (cleaned>0))] = i
+    outmask = label_image
+    outmask[cleaned == 0] = 0
 
     # merge small components to neighbours
     regionmask = skimage.measure.label(outmask)
@@ -233,7 +236,17 @@ def postrocessing(label_image, min_area):
                 origlabels_maxsub[regions[regionlabels.index(mapto)].max_intensity] += myarea
             regions[regionlabels.index(mapto)].__dict__['_cache']['area'] += myarea
 
-    return region_to_lobemap[regionmask]
+    outmask = region_to_lobemap[regionmask]
+
+    if outmask.shape[0] == 1:
+        holefiller = lambda x: ndimage.morphology.binary_fill_holes(x[0])[None, :, :]
+    else:
+        holefiller = fill_voids.fill
+
+    for i in np.unique(outmask)[1:]:
+        outmask[holefiller(outmask == i)] = i
+
+    return outmask
 
 
 def bbox_3D(labelmap, margin=2):

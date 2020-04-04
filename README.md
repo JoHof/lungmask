@@ -53,18 +53,18 @@ lungmask -h
 ### As a python module:
 
 ```
-from lungmask import lungmask
+from lungmask import mask
 import SimpleITK as sitk
 
 input_image = sitk.ReadImage(INPUT)
-segmentation = lungmask.apply(input_image)  # default model is U-net(R231)
+segmentation = mask.apply(input_image)  # default model is U-net(R231)
 ```
 input_image has to be a SimpleITK object.
 
 Load an alternative model like so:
 ```
-model = lungmask.get_model('unet','LTRCLobes')
-segmentation = lungmask.apply(input_image, model)
+model = mask.get_model('unet','LTRCLobes')
+segmentation = mask.apply(input_image, model)
 ```
 
 ## Limitations
