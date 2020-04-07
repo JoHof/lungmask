@@ -9,7 +9,7 @@ import pydicom as pyd
 import logging
 from tqdm import tqdm
 import fill_voids
-
+import skimage.morphology
 
 def preprocess(img, label=None, resolution = [192,192]):
     imgmtx = np.copy(img)
@@ -239,7 +239,8 @@ def postrocessing(label_image):
     outmask = region_to_lobemap[regionmask]
 
     if outmask.shape[0] == 1:
-        holefiller = lambda x: ndimage.morphology.binary_fill_holes(x[0])[None, :, :]
+        # holefiller = lambda x: ndimage.morphology.binary_fill_holes(x[0])[None, :, :] # This is bad for slices that show the liver
+        holefiller = lambda x: skimage.morphology.area_closing(x[0].astype(int), area_threshold=64)[None, :, :] == 1
     else:
         holefiller = fill_voids.fill
 
