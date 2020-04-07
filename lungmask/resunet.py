@@ -39,18 +39,18 @@ class UNet(nn.Module):
         self.down_path = nn.ModuleList()
         for i in range(depth):
             if i == 0 and residual:
-                self.down_path.append(UNetConvBlock(prev_channels, 2**(wf+i),
-                                                padding, batch_norm, residual, first=True ))
+                self.down_path.append(UNetConvBlock(prev_channels, 2 ** (wf + i),
+                                                    padding, batch_norm, residual, first=True))
             else:
-                self.down_path.append(UNetConvBlock(prev_channels, 2**(wf+i),
-                                                   padding, batch_norm, residual))
-            prev_channels = 2**(wf+i)
+                self.down_path.append(UNetConvBlock(prev_channels, 2 ** (wf + i),
+                                                    padding, batch_norm, residual))
+            prev_channels = 2 ** (wf + i)
 
         self.up_path = nn.ModuleList()
         for i in reversed(range(depth - 1)):
-            self.up_path.append(UNetUpBlock(prev_channels, 2**(wf+i), up_mode,
+            self.up_path.append(UNetUpBlock(prev_channels, 2 ** (wf + i), up_mode,
                                             padding, batch_norm, residual))
-            prev_channels = 2**(wf+i)
+            prev_channels = 2 ** (wf + i)
 
         self.last = nn.Conv2d(prev_channels, n_classes, kernel_size=1)
         self.softmax = nn.LogSoftmax(dim=1)
@@ -59,12 +59,12 @@ class UNet(nn.Module):
         blocks = []
         for i, down in enumerate(self.down_path):
             x = down(x)
-            if i != len(self.down_path)-1:
+            if i != len(self.down_path) - 1:
                 blocks.append(x)
                 x = F.avg_pool2d(x, 2)
 
         for i, up in enumerate(self.up_path):
-            x = up(x, blocks[-i-1])
+            x = up(x, blocks[-i - 1])
 
         res = self.last(x)
         return self.softmax(res)
@@ -111,13 +111,13 @@ class UNetConvBlock(nn.Module):
             if self.in_size != self.out_size:
                 x = self.residual_input_conv(x)
                 x = self.residual_batchnorm(x)
-            out = out+x
- 
+            out = out + x
+
         return out
 
 
 class UNetUpBlock(nn.Module):
-    def __init__(self, in_size, out_size, up_mode, padding, batch_norm, residual = False):
+    def __init__(self, in_size, out_size, up_mode, padding, batch_norm, residual=False):
         super(UNetUpBlock, self).__init__()
         self.residual = residual
         self.in_size = in_size
@@ -150,6 +150,6 @@ class UNetUpBlock(nn.Module):
             if self.in_size != self.out_size:
                 out_orig = self.residual_input_conv(out_orig)
                 out_orig = self.residual_batchnorm(out_orig)
-            out = out+out_orig
+            out = out + out_orig
 
         return out
