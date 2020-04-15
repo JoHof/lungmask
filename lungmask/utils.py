@@ -73,11 +73,19 @@ def crop_and_resize(img, mask=None, width=192, height=192):
     return img, mask, bbox
 
 
+## For some reasons skimage.transform leads to edgy mask borders compared to ndimage.zoom
+# def reshape_mask(mask, tbox, origsize):
+#     res = np.ones(origsize) * 0
+#     resize = [tbox[2] - tbox[0], tbox[3] - tbox[1]]
+#     imgres = skimage.transform.resize(mask, resize, order=0, mode='constant', cval=0, anti_aliasing=False, preserve_range=True)
+#     res[tbox[0]:tbox[2], tbox[1]:tbox[3]] = imgres
+#     return res
+
+
 def reshape_mask(mask, tbox, origsize):
     res = np.ones(origsize) * 0
     resize = [tbox[2] - tbox[0], tbox[3] - tbox[1]]
     imgres = ndimage.zoom(mask, resize / np.asarray(mask.shape), order=0)
-
     res[tbox[0]:tbox[2], tbox[1]:tbox[3]] = imgres
     return res
 
@@ -183,7 +191,7 @@ def get_input_image(path):
     return input_image
 
 
-def postrocessing(label_image):
+def postrocessing(label_image, spare=[]):
     '''some post-processing mapping small label patches to the neighbout whith which they share the
         largest border. All connected components smaller than min_area will be removed
     '''
@@ -220,7 +228,7 @@ def postrocessing(label_image):
             region_to_lobemap[r.label] = r.max_intensity
 
     for r in regions:
-        if r.area < origlabels_maxsub[r.max_intensity]:
+        if r.area < origlabels_maxsub[r.max_intensity] or region_to_lobemap[r.label] in spare:
             bb = bbox_3D(regionmask == r.label)
             sub = regionmask[bb[0]:bb[1], bb[2]:bb[3], bb[4]:bb[5]]
             dil = ndimage.binary_dilation(sub == r.label)
