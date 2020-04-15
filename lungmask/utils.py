@@ -73,10 +73,19 @@ def crop_and_resize(img, mask=None, width=192, height=192):
     return img, mask, bbox
 
 
+## For some reasons skimage.transform leads to edgy mask borders compared to ndimage.zoom
+# def reshape_mask(mask, tbox, origsize):
+#     res = np.ones(origsize) * 0
+#     resize = [tbox[2] - tbox[0], tbox[3] - tbox[1]]
+#     imgres = skimage.transform.resize(mask, resize, order=0, mode='constant', cval=0, anti_aliasing=False, preserve_range=True)
+#     res[tbox[0]:tbox[2], tbox[1]:tbox[3]] = imgres
+#     return res
+
+
 def reshape_mask(mask, tbox, origsize):
     res = np.ones(origsize) * 0
     resize = [tbox[2] - tbox[0], tbox[3] - tbox[1]]
-    imgres = skimage.transform.resize(mask, resize, order=0, mode='constant', cval=0, anti_aliasing=False, preserve_range=True)
+    imgres = ndimage.zoom(mask, resize / np.asarray(mask.shape), order=0)
     res[tbox[0]:tbox[2], tbox[1]:tbox[3]] = imgres
     return res
 
