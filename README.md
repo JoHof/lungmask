@@ -6,7 +6,7 @@ This package provides trained U-net models for lung segmentation. For now, four 
 
 - U-net(LTRCLobes): This model was trained on a subset of the [LTRC](https://ltrcpublic.com) dataset. The model performs segmentation of individual lung-lobes but yields limited performance when dense pathologies are present. 
 
-- U-net(LTRCLobes_R231): This will run the R231 and LTRCLobes model and fuse the results. False negatives from LTRCLobes will be fill by R231 predictions and mapped to a neighbor label. False positives from LTRCLobes will be removed. 
+- U-net(LTRCLobes_R231): This will run the R231 and LTRCLobes model and fuse the results. False negatives from LTRCLobes will be filled by R231 predictions and mapped to a neighbor label. False positives from LTRCLobes will be removed. 
 
 - [U-net(R231CovidWeb)](#COVID-19-Web)
 
