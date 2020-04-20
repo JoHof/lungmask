@@ -25,6 +25,8 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
 
     voxvol = np.prod(image.GetSpacing())
     inimg_raw = sitk.GetArrayFromImage(image)
+    directions = np.asarray(image.GetDirection())
+    inimg_raw = np.flip(inimg_raw, np.where(directions[[0,4,8]][::-1]<0)[0])
     del image
 
     if force_cpu:
@@ -64,6 +66,8 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
     outmask = np.asarray(
         [utils.reshape_mask(outmask[i], xnew_box[i], inimg_raw.shape[1:]) for i in range(outmask.shape[0])],
         dtype=np.uint8)
+
+    outmask = np.flip(outmask, np.where(directions[[0,4,8]][::-1]<0)[0])
 
     return outmask
 

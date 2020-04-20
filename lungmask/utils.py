@@ -56,7 +56,7 @@ def simple_bodymask(img):
 
 def crop_and_resize(img, mask=None, width=192, height=192):
     bmask = simple_bodymask(img)
-    #     img[bmask==0] = -1024 # this line removes background outside of the lung.
+    # img[bmask==0] = -1024 # this line removes background outside of the lung.
     # However, it has been shown problematic with narrow circular field of views that touch the lung.
     # Possibly doing more harm than help
     reg = skimage.measure.regionprops(skimage.measure.label(bmask))
