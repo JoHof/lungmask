@@ -32,12 +32,13 @@ def main():
         batchsize = 1
 
     logging.info(f'Load model')
-    model = mask.get_model(args.modeltype, args.modelname)
+    
     input_image = utils.get_input_image(args.input)
     logging.info(f'Infer lungmask')
-    if modelname == 'LTRCLobes_R231':
+    if args.modelname == 'LTRCLobes_R231':
         result = mask.apply_fused('LTRCLobes','R231')
     else:
+        model = mask.get_model(args.modeltype, args.modelname)
         result = mask.apply(input_image, model, force_cpu=args.cpu, batch_size=batchsize, volume_postprocessing=not(args.nopostprocess))
 
     result_out= sitk.GetImageFromArray(result)
