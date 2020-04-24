@@ -90,9 +90,12 @@ def apply_fused(image, basemodel = 'LTRCLobes', fillmodel = 'R231', force_cpu=Fa
     '''Will apply basemodel and use fillmodel to mitiage false negatives'''
     mdl_r = get_model('unet',fillmodel)
     mdl_l = get_model('unet',basemodel)
+    logging.info("Apply: %s" % basemodel)
     res_l = apply(image, mdl_l, force_cpu=force_cpu, batch_size=batch_size,  volume_postprocessing=volume_postprocessing)
+    logging.info("Apply: %s" % fillmodel)
     res_r = apply(image, mdl_r, force_cpu=force_cpu, batch_size=batch_size,  volume_postprocessing=volume_postprocessing)
     spare_value = res_l.max()+1
     res_l[np.logical_and(res_l==0, res_r>0)] = spare_value
     res_l[res_r==0] = 0
+    logging.info("Fusing results... this may take up to several minutes!")
     return utils.postrocessing(res_l, spare=[spare_value])

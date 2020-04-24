@@ -227,7 +227,7 @@ def postrocessing(label_image, spare=[]):
             origlabels_maxsub[r.max_intensity] = r.area
             region_to_lobemap[r.label] = r.max_intensity
 
-    for r in regions:
+    for r in tqdm(regions):
         if r.area < origlabels_maxsub[r.max_intensity] or region_to_lobemap[r.label] in spare:
             bb = bbox_3D(regionmask == r.label)
             sub = regionmask[bb[0]:bb[1], bb[2]:bb[3], bb[4]:bb[5]]
