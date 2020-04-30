@@ -18,7 +18,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input', metavar='input', type=path, help='Path to the input image, can be a folder for dicoms')
     parser.add_argument('output', metavar='output', type=str, help='Filepath for output lungmask')
-    parser.add_argument('--modeltype', help='Default: unet', type=str, choices=['unet', 'resunet'], default='unet')
+    parser.add_argument('--modeltype', help='Default: unet', type=str, choices=['unet'], default='unet')
     parser.add_argument('--modelname', help="spcifies the trained model, Default: R231", type=str, choices=['R231','LTRCLobes','LTRCLobes_R231','R231CovidWeb'], default='R231')
     parser.add_argument('--cpu', help="Force using the CPU even when a GPU is available, will override batchsize to 1", action='store_true')
     parser.add_argument('--nopostprocess', help="Deactivates postprocessing (removal of unconnected components and hole filling", action='store_true')
