@@ -5,6 +5,7 @@ from lungmask import mask
 from lungmask import utils
 import os
 import SimpleITK as sitk
+import pkg_resources
 
 
 def path(string):
@@ -15,6 +16,8 @@ def path(string):
 
 
 def main():
+    version = pkg_resources.require("lungmask")[0].version
+    
     parser = argparse.ArgumentParser()
     parser.add_argument('input', metavar='input', type=path, help='Path to the input image, can be a folder for dicoms')
     parser.add_argument('output', metavar='output', type=str, help='Filepath for output lungmask')
@@ -23,10 +26,11 @@ def main():
     parser.add_argument('--cpu', help="Force using the CPU even when a GPU is available, will override batchsize to 1", action='store_true')
     parser.add_argument('--nopostprocess', help="Deactivates postprocessing (removal of unconnected components and hole filling", action='store_true')
     parser.add_argument('--batchsize', type=int, help="Number of slices processed simultaneously. Lower number requires less memory but may be slower.", default=20)
+    parser.add_argument('--version', help="Shows the current version of lungmask", action='version', version=version)
 
     argsin = sys.argv[1:]
     args = parser.parse_args(argsin)
-
+    
     batchsize = args.batchsize
     if args.cpu:
         batchsize = 1

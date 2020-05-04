@@ -196,27 +196,11 @@ def postrocessing(label_image, spare=[]):
         largest border. All connected components smaller than min_area will be removed
     '''
 
-    # cleaning overall connected
-    regionmask = skimage.measure.label(label_image > 0)
-    regions = skimage.measure.regionprops(regionmask)
-    resizes = np.asarray([x.area for x in regions])
-    m = len(resizes)
-    ix = np.zeros((m,), dtype=np.uint8)
-    minsize = 0
-    if m > 2:
-        minsize = np.sort(resizes)[-3]
-    ix[resizes > minsize] = 1
-    ix = np.concatenate([[0, ], ix])
-    cleaned = ix[regionmask]
-
-    outmask = label_image
-    outmask[cleaned == 0] = 0
-
     # merge small components to neighbours
-    regionmask = skimage.measure.label(outmask)
-    origlabels = np.unique(outmask)
+    regionmask = skimage.measure.label(label_image)
+    origlabels = np.unique(label_image)
     origlabels_maxsub = np.zeros((max(origlabels) + 1,), dtype=np.uint32)  # will hold the largest component for a label
-    regions = skimage.measure.regionprops(regionmask, outmask)
+    regions = skimage.measure.regionprops(regionmask, label_image)
     regions.sort(key=lambda x: x.area)
     regionlabels = [x.label for x in regions]
 
@@ -247,16 +231,17 @@ def postrocessing(label_image, spare=[]):
                 origlabels_maxsub[regions[regionlabels.index(mapto)].max_intensity] += myarea
             regions[regionlabels.index(mapto)].__dict__['_cache']['area'] += myarea
 
-    outmask = region_to_lobemap[regionmask]
+    outmask_mapped = region_to_lobemap[regionmask]
 
-    if outmask.shape[0] == 1:
+    if outmask_mapped.shape[0] == 1:
         # holefiller = lambda x: ndimage.morphology.binary_fill_holes(x[0])[None, :, :] # This is bad for slices that show the liver
         holefiller = lambda x: skimage.morphology.area_closing(x[0].astype(int), area_threshold=64)[None, :, :] == 1
     else:
         holefiller = fill_voids.fill
 
-    for i in np.unique(outmask)[1:]:
-        outmask[holefiller(outmask == i)] = i
+    outmask = np.zeros(outmask_mapped.shape, dtype=np.uint8)
+    for i in np.unique(outmask_mapped)[1:]:
+        outmask[holefiller(keep_largest_connected_component(outmask_mapped == i))] = i
 
     return outmask
 
@@ -278,3 +263,12 @@ def bbox_3D(labelmap, margin=2):
     zmax += margin if zmax <= shape[2] - margin else zmax
 
     return rmin, rmax, cmin, cmax, zmin, zmax
+
+
+def keep_largest_connected_component(mask):
+    mask = skimage.measure.label(mask)
+    regions = skimage.measure.regionprops(mask)
+    resizes = np.asarray([x.area for x in regions])
+    max_region = np.argsort(resizes)[-1] + 1
+    mask = mask == max_region
+    return mask
