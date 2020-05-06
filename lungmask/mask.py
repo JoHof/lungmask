@@ -6,6 +6,7 @@ from .resunet import UNet
 import warnings
 import sys
 from tqdm import tqdm
+import skimage
 import logging
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -19,14 +20,14 @@ model_urls = {('unet', 'R231'): ('https://github.com/JoHof/lungmask/releases/dow
                   'https://github.com/JoHof/lungmask/releases/download/v0.0/unet_r231covid-0de78a7e.pth', 3)}
 
 
-def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessing=True):
+def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessing=True, noHU=False):
     if model is None:
         model = get_model('unet', 'R231')
 
-    voxvol = np.prod(image.GetSpacing())
     inimg_raw = sitk.GetArrayFromImage(image)
     directions = np.asarray(image.GetDirection())
-    inimg_raw = np.flip(inimg_raw, np.where(directions[[0,4,8]][::-1]<0)[0])
+    if len(directions) == 9:
+        inimg_raw = np.flip(inimg_raw, np.where(directions[[0,4,8]][::-1]<0)[0])
     del image
 
     if force_cpu:
@@ -40,9 +41,19 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
             device = torch.device('cpu')
     model.to(device)
 
-    tvolslices, xnew_box = utils.preprocess(inimg_raw, resolution=[256, 256])
-    tvolslices[tvolslices > 600] = 600
-    tvolslices = np.divide((tvolslices + 1024), 1624)
+    
+    if not noHU:
+        tvolslices, xnew_box = utils.preprocess(inimg_raw, resolution=[256, 256])
+        tvolslices[tvolslices > 600] = 600
+        tvolslices = np.divide((tvolslices + 1024), 1624)
+    else:
+        # support for non HU images. This is just a hack. The models were not trained with this in mind
+        tvolslices = skimage.color.rgb2gray(inimg_raw)
+        tvolslices = skimage.transform.resize(tvolslices, [256, 256])
+        tvolslices = np.asarray([tvolslices*x for x in np.linspace(0.3,2,20)])
+        tvolslices[tvolslices>1] = 1
+        sanity = [(tvolslices[x]>0.6).sum()>25000 for x in range(len(tvolslices))]
+        tvolslices = tvolslices[sanity]
     torch_ds_val = utils.LungLabelsDS_inf(tvolslices)
     dataloader_val = torch.utils.data.DataLoader(torch_ds_val, batch_size=batch_size, shuffle=False, num_workers=1,
                                                  pin_memory=False)
@@ -63,13 +74,18 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
     else:
         outmask = timage_res
 
-    outmask = np.asarray(
-        [utils.reshape_mask(outmask[i], xnew_box[i], inimg_raw.shape[1:]) for i in range(outmask.shape[0])],
-        dtype=np.uint8)
+    if not noHU:
+        outmask = np.asarray(
+            [utils.reshape_mask(outmask[i], xnew_box[i], inimg_raw.shape[1:]) for i in range(outmask.shape[0])],
+            dtype=np.uint8)
+    else:
+        outmask = skimage.transform.resize(outmask[np.argmax((outmask==1).sum(axis=(1,2)))], inimg_raw.shape[:2], order=0, anti_aliasing=False, preserve_range=True)
 
-    outmask = np.flip(outmask, np.where(directions[[0,4,8]][::-1]<0)[0])
 
-    return outmask
+    if len(directions) == 9:
+        outmask = np.flip(outmask, np.where(directions[[0,4,8]][::-1]<0)[0])
+
+    return outmask.astype(np.uint8)
 
 
 def get_model(modeltype, modelname):
@@ -86,14 +102,14 @@ def get_model(modeltype, modelname):
     return model
 
 
-def apply_fused(image, basemodel = 'LTRCLobes', fillmodel = 'R231', force_cpu=False, batch_size=20, volume_postprocessing=True):
+def apply_fused(image, basemodel = 'LTRCLobes', fillmodel = 'R231', force_cpu=False, batch_size=20, volume_postprocessing=True, noHU=False):
     '''Will apply basemodel and use fillmodel to mitiage false negatives'''
     mdl_r = get_model('unet',fillmodel)
     mdl_l = get_model('unet',basemodel)
     logging.info("Apply: %s" % basemodel)
-    res_l = apply(image, mdl_l, force_cpu=force_cpu, batch_size=batch_size,  volume_postprocessing=volume_postprocessing)
+    res_l = apply(image, mdl_l, force_cpu=force_cpu, batch_size=batch_size,  volume_postprocessing=volume_postprocessing, noHU=noHU)
     logging.info("Apply: %s" % fillmodel)
-    res_r = apply(image, mdl_r, force_cpu=force_cpu, batch_size=batch_size,  volume_postprocessing=volume_postprocessing)
+    res_r = apply(image, mdl_r, force_cpu=force_cpu, batch_size=batch_size,  volume_postprocessing=volume_postprocessing, noHU=noHU)
     spare_value = res_l.max()+1
     res_l[np.logical_and(res_l==0, res_r>0)] = spare_value
     res_l[res_r==0] = 0
