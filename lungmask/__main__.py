@@ -49,9 +49,11 @@ def main():
         
     if args.noHU:
         file_ending = args.output.split('.')[-1]
-        if file_ending in ['.jpg','jpeg','png']:
+        print(file_ending)
+        if file_ending in ['jpg','jpeg','png']:
             result = (result/(result.max())*255).astype(np.uint8)
-            
+        result = result[0]
+             
     result_out= sitk.GetImageFromArray(result)
     result_out.CopyInformation(input_image)
     logging.info(f'Save result to: {args.output}')

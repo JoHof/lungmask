@@ -74,14 +74,13 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
     else:
         outmask = timage_res
 
-    if not noHU:
-        outmask = np.asarray(
+    if noHU:
+        outmask = skimage.transform.resize(outmask[np.argmax((outmask==1).sum(axis=(1,2)))], inimg_raw.shape[:2], order=0, anti_aliasing=False, preserve_range=True)[None,:,:]
+    else:
+         outmask = np.asarray(
             [utils.reshape_mask(outmask[i], xnew_box[i], inimg_raw.shape[1:]) for i in range(outmask.shape[0])],
             dtype=np.uint8)
-    else:
-        outmask = skimage.transform.resize(outmask[np.argmax((outmask==1).sum(axis=(1,2)))], inimg_raw.shape[:2], order=0, anti_aliasing=False, preserve_range=True)
-
-
+        
     if len(directions) == 9:
         outmask = np.flip(outmask, np.where(directions[[0,4,8]][::-1]<0)[0])
 

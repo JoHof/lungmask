@@ -226,6 +226,7 @@ def postrocessing(label_image, spare=[]):
                     mapto = n
                     myarea = r.area
             regionmask[regionmask == r.label] = mapto
+            # print(str(region_to_lobemap[r.label]) + ' -> ' + str(region_to_lobemap[mapto])) # for debugging
             if regions[regionlabels.index(mapto)].area == origlabels_maxsub[
                 regions[regionlabels.index(mapto)].max_intensity]:
                 origlabels_maxsub[regions[regionlabels.index(mapto)].max_intensity] += myarea
@@ -261,8 +262,11 @@ def bbox_3D(labelmap, margin=2):
     zmin, zmax = np.where(z)[0][[0, -1]]
     zmin -= margin if zmin >= margin else zmin
     zmax += margin if zmax <= shape[2] - margin else zmax
+    
+    if rmax-rmin == 0:
+        rmax = rmin+1
 
-    return rmin, rmax, cmin, cmax, zmin, zmax
+    return np.asarray([rmin, rmax, cmin, cmax, zmin, zmax])
 
 
 def keep_largest_connected_component(mask):
