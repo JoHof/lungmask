@@ -212,7 +212,7 @@ def postrocessing(label_image, spare=[]):
             region_to_lobemap[r.label] = r.max_intensity
 
     for r in tqdm(regions):
-        if r.area < origlabels_maxsub[r.max_intensity] or region_to_lobemap[r.label] in spare:
+        if (r.area < origlabels_maxsub[r.max_intensity] or region_to_lobemap[r.label] in spare) and r.area>2: # area>2 improves runtime because small areas 1 and 2 voxel will be ignored
             bb = bbox_3D(regionmask == r.label)
             sub = regionmask[bb[0]:bb[1], bb[2]:bb[3], bb[4]:bb[5]]
             dil = ndimage.binary_dilation(sub == r.label)
