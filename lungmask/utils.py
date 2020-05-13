@@ -212,7 +212,7 @@ def postrocessing(label_image, spare=[]):
             region_to_lobemap[r.label] = r.max_intensity
 
     for r in tqdm(regions):
-        if (r.area < origlabels_maxsub[r.max_intensity] or region_to_lobemap[r.label] in spare) and r.area>2: # area>2 improves runtime because small areas 1 and 2 voxel will be ignored
+        if (r.area < origlabels_maxsub[r.max_intensity] or r.max_intensity in spare) and r.area>2: # area>2 improves runtime because small areas 1 and 2 voxel will be ignored
             bb = bbox_3D(regionmask == r.label)
             sub = regionmask[bb[0]:bb[1], bb[2]:bb[3], bb[4]:bb[5]]
             dil = ndimage.binary_dilation(sub == r.label)
@@ -221,7 +221,7 @@ def postrocessing(label_image, spare=[]):
             maxmap = 0
             myarea = 0
             for ix, n in enumerate(neighbours):
-                if n != 0 and n != r.label and counts[ix] > maxmap:
+                if n != 0 and n != r.label and counts[ix] > maxmap and n != spare:
                     maxmap = counts[ix]
                     mapto = n
                     myarea = r.area
@@ -233,6 +233,7 @@ def postrocessing(label_image, spare=[]):
             regions[regionlabels.index(mapto)].__dict__['_cache']['area'] += myarea
 
     outmask_mapped = region_to_lobemap[regionmask]
+    outmask_mapped[outmask_mapped==spare] = 0 
 
     if outmask_mapped.shape[0] == 1:
         # holefiller = lambda x: ndimage.morphology.binary_fill_holes(x[0])[None, :, :] # This is bad for slices that show the liver
