@@ -39,7 +39,7 @@ def preprocess(img, label=None, resolution=[192, 192]):
 def simple_bodymask(img):
     maskthreshold = -500
     oshape = img.shape
-    img = ndimage.zoom(img, 0.25, order=0)
+    img = ndimage.zoom(img, 128/np.asarray(img.shape), order=0)
     bodymask = img > maskthreshold
     bodymask = ndimage.binary_closing(bodymask)
     bodymask = ndimage.binary_fill_holes(bodymask, structure=np.ones((3, 3))).astype(int)
@@ -50,7 +50,7 @@ def simple_bodymask(img):
         max_region = np.argmax(list(map(lambda x: x.area, regions))) + 1
         bodymask = bodymask == max_region
         bodymask = ndimage.binary_dilation(bodymask, iterations=2)
-    real_scaling = np.divide(oshape, img.shape)[0]
+    real_scaling = np.asarray(oshape)/128
     return ndimage.zoom(bodymask, real_scaling, order=0)
 
 
