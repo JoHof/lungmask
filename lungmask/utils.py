@@ -62,8 +62,6 @@ def crop_and_resize(img, mask=None, width=192, height=192):
     reg = skimage.measure.regionprops(skimage.measure.label(bmask))
     if len(reg) > 0:
         bbox = np.asarray(reg[0].bbox)
-        # bbox from regionprops yields half open intervals
-        bbox[[2,3]] -= 1
     else:
         bbox = (0, 0, bmask.shape[0], bmask.shape[1])
     img = img[bbox[0]:bbox[2], bbox[1]:bbox[3]]
