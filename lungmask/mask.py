@@ -18,7 +18,7 @@ model_urls = {('unet', 'R231'): ('https://github.com/JoHof/lungmask/releases/dow
                   'https://github.com/JoHof/lungmask/releases/download/v0.0/unet_ltrclobes-3a07043d.pth', 6),
               ('unet', 'R231CovidWeb'): (
                   'https://github.com/JoHof/lungmask/releases/download/v0.0/unet_r231covid-0de78a7e.pth', 3),
-              ('unet', 'R231lung1'): ('https://github.com/JoHof/lungmask/releases/download/v0.0/unet_r231lung1-5c10dc5b.pth', 3)}
+              ('unet', 'R231lung1'): ('https://github.com/JoHof/lungmask/releases/download/v0.0/unet_r231lung1-1eab9955.pth', 3)}
 
 
 def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessing=True, noHU=False):
