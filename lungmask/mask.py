@@ -24,10 +24,13 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
     if model is None:
         model = get_model('unet', 'R231')
 
-    inimg_raw = sitk.GetArrayFromImage(image)
-    directions = np.asarray(image.GetDirection())
-    if len(directions) == 9:
-        inimg_raw = np.flip(inimg_raw, np.where(directions[[0,4,8]][::-1]<0)[0])
+    if isinstance(image, np.ndarray):
+        inimg_raw = image.copy()
+    else:
+        inimg_raw = sitk.GetArrayFromImage(image)
+        directions = np.asarray(image.GetDirection())
+        if len(directions) == 9:
+            inimg_raw = np.flip(inimg_raw, np.where(directions[[0,4,8]][::-1]<0)[0])
     del image
 
     if force_cpu:
@@ -80,10 +83,11 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
          outmask = np.asarray(
             [utils.reshape_mask(outmask[i], xnew_box[i], inimg_raw.shape[1:]) for i in range(outmask.shape[0])],
             dtype=np.uint8)
-        
-    if len(directions) == 9:
-        outmask = np.flip(outmask, np.where(directions[[0,4,8]][::-1]<0)[0])
-
+    
+    if not isinstance(image, np.ndarray):
+        if len(directions) == 9:
+            outmask = np.flip(outmask, np.where(directions[[0,4,8]][::-1]<0)[0])    
+    
     return outmask.astype(np.uint8)
 
 
