@@ -23,8 +23,9 @@ model_urls = {('unet', 'R231'): ('https://github.com/JoHof/lungmask/releases/dow
 def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessing=True, noHU=False):
     if model is None:
         model = get_model('unet', 'R231')
-
-    if isinstance(image, np.ndarray):
+    
+    numpy_mode=isinstance(image, np.ndarray)
+    if numpy_mode:
         inimg_raw = image.copy()
     else:
         inimg_raw = sitk.GetArrayFromImage(image)
@@ -84,7 +85,7 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
             [utils.reshape_mask(outmask[i], xnew_box[i], inimg_raw.shape[1:]) for i in range(outmask.shape[0])],
             dtype=np.uint8)
     
-    if not isinstance(image, np.ndarray):
+    if not numpy_mode:
         if len(directions) == 9:
             outmask = np.flip(outmask, np.where(directions[[0,4,8]][::-1]<0)[0])    
     
