@@ -24,7 +24,7 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
     if model is None:
         model = get_model('unet', 'R231')
     
-    numpy_mode=isinstance(image, np.ndarray)
+    numpy_mode = isinstance(image, np.ndarray)
     if numpy_mode:
         inimg_raw = image.copy()
     else:
