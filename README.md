@@ -88,5 +88,5 @@ The regular U-net(R231) model works very well for COVID-19 CT scans. However, co
 ## jpg, png and non HU images
 As of version 0.2.5 these images are supported. Use the ```--noHU``` tag if you process images that are not encoded in HU. Keep in mind that the models were trained on proper CT scans encoded in HU. The results on cropped, annotated, very high and very low intensity shifted images may not be very reliable. When using the ```--noHU``` tag only single slices can be processed.
 
-
- 
+## Numpy array support
+As of version 0.2.9, numpy arrays are supported as input volumes. This mode assumes the input numpy array has the following format for each axis: first axis containing slices, second axis with chest to back and third axis with right to left orientation.
