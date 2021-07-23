@@ -1,3 +1,4 @@
+from lungmask.lungmask.utils import Action
 import numpy as np
 import torch
 from lungmask import utils
@@ -12,15 +13,19 @@ import logging
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 warnings.filterwarnings("ignore", category=UserWarning)
 
+#Adding Aggregate Pattern for course purpose(Software design)
 # stores urls and number of classes of the models
+
 model_urls = {('unet', 'R231'): ('https://github.com/JoHof/lungmask/releases/download/v0.0/unet_r231-d5d2fc3d.pth', 3),
-              ('unet', 'LTRCLobes'): (
-                  'https://github.com/JoHof/lungmask/releases/download/v0.0/unet_ltrclobes-3a07043d.pth', 6),
-              ('unet', 'R231CovidWeb'): (
-                  'https://github.com/JoHof/lungmask/releases/download/v0.0/unet_r231covid-0de78a7e.pth', 3)}
+            ('unet', 'LTRCLobes'): (
+                'https://github.com/JoHof/lungmask/releases/download/v0.0/unet_ltrclobes-3a07043d.pth', 6),
+            ('unet', 'R231CovidWeb'): (
+                'https://github.com/JoHof/lungmask/releases/download/v0.0/unet_r231covid-0de78a7e.pth', 3)}
+
 
 
 def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessing=True, noHU=False):
+
     if model is None:
         model = get_model('unet', 'R231')
     
@@ -45,9 +50,9 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
             device = torch.device('cpu')
     model.to(device)
 
-    
+    #I want to let Action Class in the utils to be a instant, then use the preprocess will just call the instance
     if not noHU:
-        tvolslices, xnew_box = utils.preprocess(inimg_raw, resolution=[256, 256])
+        tvolslices, xnew_box = Action.preprocess(inimg_raw, resolution=[256, 256])
         tvolslices[tvolslices > 600] = 600
         tvolslices = np.divide((tvolslices + 1024), 1624)
     else:
@@ -60,7 +65,7 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
         tvolslices = tvolslices[sanity]
     torch_ds_val = utils.LungLabelsDS_inf(tvolslices)
     dataloader_val = torch.utils.data.DataLoader(torch_ds_val, batch_size=batch_size, shuffle=False, num_workers=1,
-                                                 pin_memory=False)
+                                                pin_memory=False)
 
     timage_res = np.empty((np.append(0, tvolslices[0].shape)), dtype=np.uint8)
 
@@ -73,16 +78,17 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
 
     # postprocessing includes removal of small connected components, hole filling and mapping of small components to
     # neighbors
+    #I want to let Action Class in the utils to be a instant, then use the postprocess will just call the instance
     if volume_postprocessing:
-        outmask = utils.postrocessing(timage_res)
+        outmask = Action.postrocessing(timage_res)
     else:
         outmask = timage_res
 
     if noHU:
         outmask = skimage.transform.resize(outmask[np.argmax((outmask==1).sum(axis=(1,2)))], inimg_raw.shape[:2], order=0, anti_aliasing=False, preserve_range=True)[None,:,:]
     else:
-         outmask = np.asarray(
-            [utils.reshape_mask(outmask[i], xnew_box[i], inimg_raw.shape[1:]) for i in range(outmask.shape[0])],
+        outmask = np.asarray(
+            [utils.Action.reshape_mask(outmask[i], xnew_box[i], inimg_raw.shape[1:]) for i in range(outmask.shape[0])],
             dtype=np.uint8)
     
     if not numpy_mode:
@@ -105,7 +111,7 @@ def get_model(modeltype, modelname):
     model.eval()
     return model
 
-
+ #I want to let Action Class in the utils to be a instant, then use the postprocess will just call the instance
 def apply_fused(image, basemodel = 'LTRCLobes', fillmodel = 'R231', force_cpu=False, batch_size=20, volume_postprocessing=True, noHU=False):
     '''Will apply basemodel and use fillmodel to mitiage false negatives'''
     mdl_r = get_model('unet',fillmodel)
@@ -118,4 +124,4 @@ def apply_fused(image, basemodel = 'LTRCLobes', fillmodel = 'R231', force_cpu=Fa
     res_l[np.logical_and(res_l==0, res_r>0)] = spare_value
     res_l[res_r==0] = 0
     logging.info("Fusing results... this may take up to several minutes!")
-    return utils.postrocessing(res_l, spare=[spare_value])
+    return Action.postrocessing(res_l, spare=[spare_value])

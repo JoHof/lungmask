@@ -13,21 +13,17 @@ import skimage.morphology
 
 class Action():
     #I want to apply Aggregate Pattern into this utils.py, and put all the processing method into a class.
-    #Action Class means that the action for processing picture. 
-    #When mask.py want to call these method, it must go through if Action available
+    #Action Class means that the action for processing picture and it is the boundery that include all the domain pattern about doing action to picture.. 
+    #When mask.py want to call these method, it must go through Action class if Action available
     #And this Action Class include the Processing Action(preprocessing, postprocessing, simple_bodymask, crop_and_resize...)
     #it will not influence LungLabelsDS_inf Class
 
     #Constructor for this Action Class
     #these attribute might be used in the rest of defiend method.
-    def __init__(self, img, label_image, origsize, tbox):
+    def __init__(self, img, label_image, tbox):
         self.img = img
         self.label_image = label_image
-        self.origsize = origsize
         self.tbox = tbox
-    
-
-
     def preprocess(img, label=None, resolution=[192, 192]):
         imgmtx = np.copy(img)
         lblsmtx = np.copy(label)
@@ -39,9 +35,9 @@ class Action():
         cip_mask = []
         for i in range(imgmtx.shape[0]):
             if label is None:
-                (im, m, box) = crop_and_resize(imgmtx[i, :, :], width=resolution[0], height=resolution[1])
+                (im, m, box) = Action.crop_and_resize(imgmtx[i, :, :], width=resolution[0], height=resolution[1])
             else:
-                (im, m, box) = crop_and_resize(imgmtx[i, :, :], mask=lblsmtx[i, :, :], width=resolution[0],
+                (im, m, box) = Action.crop_and_resize(imgmtx[i, :, :], mask=lblsmtx[i, :, :], width=resolution[0],
                                             height=resolution[1])
                 cip_mask.append(m)
             cip_xnew.append(im)
@@ -71,7 +67,7 @@ class Action():
 
 
     def crop_and_resize(img, mask=None, width=192, height=192):
-        bmask = simple_bodymask(img)
+        bmask = Action.simple_bodymask(img)
         # img[bmask==0] = -1024 # this line removes background outside of the lung.
         # However, it has been shown problematic with narrow circular field of views that touch the lung.
         # Possibly doing more harm than help
@@ -187,7 +183,7 @@ class Action():
             input_image = sitk.ReadImage(path)
         else:
             logging.info(f'Looking for dicoms in {path}')
-            dicom_vols = read_dicoms(path, original=False, primary=False)
+            dicom_vols = Action.read_dicoms(path, original=False, primary=False)
             if len(dicom_vols) < 1:
                 sys.exit('No dicoms found!')
             if len(dicom_vols) > 1:
@@ -218,7 +214,7 @@ class Action():
 
         for r in tqdm(regions):
             if (r.area < origlabels_maxsub[r.max_intensity] or r.max_intensity in spare) and r.area>2: # area>2 improves runtime because small areas 1 and 2 voxel will be ignored
-                bb = bbox_3D(regionmask == r.label)
+                bb = Action.bbox_3D(regionmask == r.label)
                 sub = regionmask[bb[0]:bb[1], bb[2]:bb[3], bb[4]:bb[5]]
                 dil = ndimage.binary_dilation(sub == r.label)
                 neighbours, counts = np.unique(sub[dil], return_counts=True)
@@ -248,7 +244,7 @@ class Action():
 
         outmask = np.zeros(outmask_mapped.shape, dtype=np.uint8)
         for i in np.unique(outmask_mapped)[1:]:
-            outmask[holefiller(keep_largest_connected_component(outmask_mapped == i))] = i
+            outmask[holefiller(Action.keep_largest_connected_component(outmask_mapped == i))] = i
 
         return outmask
 
@@ -285,10 +281,10 @@ class Action():
 
 class LungLabelsDS_inf(Dataset):
     def __init__(self, ds):
-        self.dataset = ds
+            self.dataset = ds
 
     def __len__(self):
-        return len(self.dataset)
+            return len(self.dataset)
 
     def __getitem__(self, idx):
-        return self.dataset[idx, None, :, :].astype(np.float)
+            return self.dataset[idx, None, :, :].astype(np.float)
