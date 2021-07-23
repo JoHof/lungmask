@@ -39,13 +39,13 @@ def main():
 
     logging.info(f'Load model')
     
-    input_image = utils.get_input_image(args.input)
+    input_image = utils.Action.get_input_image(args.input)
     logging.info(f'Infer lungmask')
     if args.modelname == 'LTRCLobes_R231':
-        result = mask.apply_fused(input_image, force_cpu=args.cpu, batch_size=batchsize, volume_postprocessing=not(args.nopostprocess), noHU=args.noHU)
+        result = mask.Apply_Model.apply_fused(input_image, force_cpu=args.cpu, batch_size=batchsize, volume_postprocessing=not(args.nopostprocess), noHU=args.noHU)
     else:
-        model = mask.get_model(args.modeltype, args.modelname)
-        result = mask.apply(input_image, model, force_cpu=args.cpu, batch_size=batchsize, volume_postprocessing=not(args.nopostprocess), noHU=args.noHU)
+        model = mask.Apply_Model.get_model(args.modeltype, args.modelname)
+        result = mask.Apply_Model.apply(input_image, model, force_cpu=args.cpu, batch_size=batchsize, volume_postprocessing=not(args.nopostprocess), noHU=args.noHU)
         
     if args.noHU:
         file_ending = args.output.split('.')[-1]
