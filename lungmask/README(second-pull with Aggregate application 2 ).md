@@ -1,7 +1,7 @@
 Aggregate application 2
 A new class MaskHandler is created to represent the whole image mask process. The relationship between MaskHandler and other domains are shown below.
 
-Images and tables are shown in report(PDF)  
+Images and tables are shown in report(PDF).  
  
 Changes made are detailed as follows.
 1.	The aggregate root MaskHandler is the only accessible point to carry out the image mask task. Changes are made in the function ‘main()’ in ‘__main__.py’ to remove logics on input/output flow and conditional mask activities in the original file. Instead a ‘maskhandle’ object is created and called to perform required functions. In the aggregate, the image masking task is delegated to the function ‘apply_masks’ in MaskHandler. Task to save processed images is done by ‘save_results’ in MaskHandler. 
