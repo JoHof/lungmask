@@ -20,6 +20,20 @@ model_urls = {('unet', 'R231'): ('https://github.com/JoHof/lungmask/releases/dow
                   'https://github.com/JoHof/lungmask/releases/download/v0.0/unet_r231covid-0de78a7e.pth', 3)}
 
 
+def get_model(modeltype, modelname):
+    model_url, n_classes = model_urls[(modeltype, modelname)]
+    state_dict = torch.hub.load_state_dict_from_url(model_url, progress=True, map_location=torch.device('cpu'))
+    if modeltype == 'unet':
+        model = UNet(n_classes=n_classes, padding=True, depth=5, up_mode='upsample', batch_norm=True, residual=False)
+    elif modeltype == 'resunet':
+        model = UNet(n_classes=n_classes, padding=True, depth=5, up_mode='upsample', batch_norm=True, residual=True)
+    else:
+        logging.exception(f"Model {modelname} not known")
+    model.load_state_dict(state_dict)
+    model.eval()
+    return model
+
+
 class Mask:
     def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessing=True, noHU=False):
         if model is None:
@@ -108,17 +122,3 @@ class Mask:
         res_l[res_r == 0] = 0
         logging.info("Fusing results... this may take up to several minutes!")
         return utils.postrocessing(res_l, spare=[spare_value])
-
-
-def get_model(modeltype, modelname):
-    model_url, n_classes = model_urls[(modeltype, modelname)]
-    state_dict = torch.hub.load_state_dict_from_url(model_url, progress=True, map_location=torch.device('cpu'))
-    if modeltype == 'unet':
-        model = UNet(n_classes=n_classes, padding=True, depth=5, up_mode='upsample', batch_norm=True, residual=False)
-    elif modeltype == 'resunet':
-        model = UNet(n_classes=n_classes, padding=True, depth=5, up_mode='upsample', batch_norm=True, residual=True)
-    else:
-        logging.exception(f"Model {modelname} not known")
-    model.load_state_dict(state_dict)
-    model.eval()
-    return model
