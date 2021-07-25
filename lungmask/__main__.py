@@ -2,6 +2,7 @@ import sys
 import argparse
 import logging
 from lungmask import mask
+from .mask import Mask
 from lungmask import utils
 import os
 import SimpleITK as sitk
@@ -42,10 +43,10 @@ def main():
     input_image = utils.get_input_image(args.input)
     logging.info(f'Infer lungmask')
     if args.modelname == 'LTRCLobes_R231':
-        result = mask.apply_fused(input_image, force_cpu=args.cpu, batch_size=batchsize, volume_postprocessing=not(args.nopostprocess), noHU=args.noHU)
+        result = Mask.apply_fused(input_image, force_cpu=args.cpu, batch_size=batchsize, volume_postprocessing=not(args.nopostprocess), noHU=args.noHU)
     else:
         model = mask.get_model(args.modeltype, args.modelname)
-        result = mask.apply(input_image, model, force_cpu=args.cpu, batch_size=batchsize, volume_postprocessing=not(args.nopostprocess), noHU=args.noHU)
+        result = Mask.apply(input_image, model, force_cpu=args.cpu, batch_size=batchsize, volume_postprocessing=not(args.nopostprocess), noHU=args.noHU)
         
     if args.noHU:
         file_ending = args.output.split('.')[-1]
