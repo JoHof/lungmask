@@ -24,6 +24,8 @@ def main():
     parser.add_argument('output', metavar='output', type=str, help='Filepath for output lungmask')
     parser.add_argument('--modeltype', help='Default: unet', type=str, choices=['unet'], default='unet')
     parser.add_argument('--modelname', help="spcifies the trained model, Default: R231", type=str, choices=['R231','LTRCLobes','LTRCLobes_R231','R231CovidWeb'], default='R231')
+    parser.add_argument('--modelpath', help="spcifies the path to the trained model", default=None)
+    parser.add_argument('--classes', help="spcifies the number of output classes of the model", default=3)
     parser.add_argument('--cpu', help="Force using the CPU even when a GPU is available, will override batchsize to 1", action='store_true')
     parser.add_argument('--nopostprocess', help="Deactivates postprocessing (removal of unconnected components and hole filling", action='store_true')
     parser.add_argument('--noHU', help="For processing of images that are not encoded in hounsfield units (HU). E.g. png or jpg images from the web. Be aware, results may be substantially worse on these images", action='store_true')
@@ -42,9 +44,10 @@ def main():
     input_image = utils.get_input_image(args.input)
     logging.info(f'Infer lungmask')
     if args.modelname == 'LTRCLobes_R231':
+        assert args.modelpath is None, "Modelpath can not be specified for LTRCLobes_R231 mode"
         result = mask.apply_fused(input_image, force_cpu=args.cpu, batch_size=batchsize, volume_postprocessing=not(args.nopostprocess), noHU=args.noHU)
     else:
-        model = mask.get_model(args.modeltype, args.modelname)
+        model = mask.get_model(args.modeltype, args.modelname, args.modelpath, args.classes)
         result = mask.apply(input_image, model, force_cpu=args.cpu, batch_size=batchsize, volume_postprocessing=not(args.nopostprocess), noHU=args.noHU)
         
     if args.noHU:
