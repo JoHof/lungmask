@@ -151,7 +151,7 @@ def read_dicoms(path, primary=True, original=True):
     conc = [x[1] for x in dcm_header_info]
     sidx = np.argsort(conc)
     conc = np.asarray(conc)[sidx]
-    dcm_header_info = np.asarray(dcm_header_info)[sidx]
+    dcm_header_info = np.asarray(dcm_header_info, dtype=object)[sidx]
     # dcm_parameters = np.asarray(dcm_parameters)[sidx]
     vol_unique = np.unique(conc, return_index=1, return_inverse=1)  # unique volumes
     n_vol = len(vol_unique[1])

@@ -75,6 +75,12 @@ To use the model fusing capability for LTRCLobes_R231 use:
 segmentation = mask.apply_fused(input_image)
 ```
 
+#### Numpy array support
+As of version 0.2.9, numpy arrays are supported as input volumes. This mode assumes the input numpy array has the following format for each axis:
+* first axis containing slices
+* second axis with chest to back
+* third axis with right to left 
+
 ## Limitations
 The model works on full slices only. The slice to process has to show the full lung and the lung has to be surrounded by tissue in order to get segmented. However, the model is quite stable to cases with a cropped field of view as long as the lung is surrounded by tissue. 
 
@@ -87,6 +93,3 @@ The regular U-net(R231) model works very well for COVID-19 CT scans. However, co
 
 ## jpg, png and non HU images
 As of version 0.2.5 these images are supported. Use the ```--noHU``` tag if you process images that are not encoded in HU. Keep in mind that the models were trained on proper CT scans encoded in HU. The results on cropped, annotated, very high and very low intensity shifted images may not be very reliable. When using the ```--noHU``` tag only single slices can be processed.
-
-
- 
