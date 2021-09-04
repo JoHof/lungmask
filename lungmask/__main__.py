@@ -38,22 +38,29 @@ def main():
         batchsize = 1
 
     logging.info(f'Load model')
-    
+
+    #consiguiendo la imagen prepararla preprocesarla
     input_image = utils.get_input_image(args.input)
+
     logging.info(f'Infer lungmask')
     if args.modelname == 'LTRCLobes_R231':
         result = mask.apply_fused(input_image, force_cpu=args.cpu, batch_size=batchsize, volume_postprocessing=not(args.nopostprocess), noHU=args.noHU)
     else:
+        #cargar el modelo desde url de github
         model = mask.get_model(args.modeltype, args.modelname)
+
+        #aplicar la prediccion
         result = mask.apply(input_image, model, force_cpu=args.cpu, batch_size=batchsize, volume_postprocessing=not(args.nopostprocess), noHU=args.noHU)
         
+    #en caso sea trabajado coomo imagen normal
     if args.noHU:
         file_ending = args.output.split('.')[-1]
         print(file_ending)
         if file_ending in ['jpg','jpeg','png']:
             result = (result/(result.max())*255).astype(np.uint8)
         result = result[0]
-             
+    
+    #en caso sea una imagen medica
     result_out= sitk.GetImageFromArray(result)
     result_out.CopyInformation(input_image)
     logging.info(f'Save result to: {args.output}')
