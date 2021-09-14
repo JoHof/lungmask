@@ -1,13 +1,16 @@
-import numpy as np
-import torch
-from lungmask import utils
-import SimpleITK as sitk
-from .resunet import UNet
-import warnings
-import sys
-from tqdm import tqdm
-import skimage
 import logging
+import sys
+import warnings
+
+import numpy as np
+import SimpleITK as sitk
+import skimage
+import torch
+from tqdm import tqdm
+
+from lungmask import utils
+
+from .resunet import UNet
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -59,6 +62,7 @@ def apply(
     else:
         # support for non HU images. This is just a hack. The models were not trained with this in mind
         tvolslices = skimage.color.rgb2gray(inimg_raw)
+        # TODO: replace with cv2.INTER_LINEAR
         tvolslices = skimage.transform.resize(tvolslices, [256, 256])
         tvolslices = np.asarray([tvolslices * x for x in np.linspace(0.3, 2, 20)])
         tvolslices[tvolslices > 1] = 1
@@ -86,6 +90,7 @@ def apply(
         outmask = timage_res
 
     if noHU:
+        # TODO: replace with cv2.INTER_NEAREST
         outmask = skimage.transform.resize(
             outmask[np.argmax((outmask == 1).sum(axis=(1, 2)))],
             inimg_raw.shape[:2],

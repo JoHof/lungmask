@@ -1,15 +1,20 @@
-import scipy.ndimage as ndimage
-import skimage.measure
-import numpy as np
-from torch.utils.data import Dataset
+import logging
 import os
 import sys
-import SimpleITK as sitk
-import pydicom as pyd
-import logging
-from tqdm import tqdm
+from typing import Sequence, Union
+
+import cv2
 import fill_voids
+import numpy as np
+import pydicom as pyd
+import scipy.ndimage as ndimage
+import SimpleITK as sitk
+import skimage.measure
 import skimage.morphology
+from torch.utils.data import Dataset
+from tqdm import tqdm
+
+ORDER2OCVINTER = {0: cv2.INTER_NEAREST, 1: cv2.INTER_LINEAR, 3: cv2.INTER_CUBIC}
 
 
 def preprocess(img, label=None, resolution=[192, 192]):
@@ -25,8 +30,9 @@ def preprocess(img, label=None, resolution=[192, 192]):
         if label is None:
             (im, m, box) = crop_and_resize(imgmtx[i, :, :], width=resolution[0], height=resolution[1])
         else:
-            (im, m, box) = crop_and_resize(imgmtx[i, :, :], mask=lblsmtx[i, :, :], width=resolution[0],
-                                           height=resolution[1])
+            (im, m, box) = crop_and_resize(
+                imgmtx[i, :, :], mask=lblsmtx[i, :, :], width=resolution[0], height=resolution[1]
+            )
             cip_mask.append(m)
         cip_xnew.append(im)
         cip_box.append(box)
@@ -39,7 +45,7 @@ def preprocess(img, label=None, resolution=[192, 192]):
 def simple_bodymask(img):
     maskthreshold = -500
     oshape = img.shape
-    img = ndimage.zoom(img, 128/np.asarray(img.shape), order=0)
+    img = cv2_zoom(img, 128 / np.asarray(img.shape), order=0)
     bodymask = img > maskthreshold
     bodymask = ndimage.binary_closing(bodymask)
     bodymask = ndimage.binary_fill_holes(bodymask, structure=np.ones((3, 3))).astype(int)
@@ -50,8 +56,8 @@ def simple_bodymask(img):
         max_region = np.argmax(list(map(lambda x: x.area, regions))) + 1
         bodymask = bodymask == max_region
         bodymask = ndimage.binary_dilation(bodymask, iterations=2)
-    real_scaling = np.asarray(oshape)/128
-    return ndimage.zoom(bodymask, real_scaling, order=0)
+    real_scaling = np.asarray(oshape) / 128
+    return cv2_zoom(bodymask, real_scaling, order=0)
 
 
 def crop_and_resize(img, mask=None, width=192, height=192):
@@ -64,11 +70,12 @@ def crop_and_resize(img, mask=None, width=192, height=192):
         bbox = np.asarray(reg[0].bbox)
     else:
         bbox = (0, 0, bmask.shape[0], bmask.shape[1])
-    img = img[bbox[0]:bbox[2], bbox[1]:bbox[3]]
-    img = ndimage.zoom(img, np.asarray([width, height]) / np.asarray(img.shape), order=1)
+    img = img[bbox[0] : bbox[2], bbox[1] : bbox[3]]
+    img = cv2_zoom(img, np.asarray([width, height]) / np.asarray(img.shape), order=1)
+
     if not mask is None:
-        mask = mask[bbox[0]:bbox[2], bbox[1]:bbox[3]]
-        mask = ndimage.zoom(mask, np.asarray([width, height]) / np.asarray(mask.shape), order=0)
+        mask = mask[bbox[0] : bbox[2], bbox[1] : bbox[3]]
+        mask = cv2_zoom(mask, np.asarray([width, height]) / np.asarray(mask.shape), order=0)
         # mask = ndimage.binary_closing(mask,iterations=5)
     return img, mask, bbox
 
@@ -85,8 +92,8 @@ def crop_and_resize(img, mask=None, width=192, height=192):
 def reshape_mask(mask, tbox, origsize):
     res = np.ones(origsize) * 0
     resize = [tbox[2] - tbox[0], tbox[3] - tbox[1]]
-    imgres = ndimage.zoom(mask, resize / np.asarray(mask.shape), order=0)
-    res[tbox[0]:tbox[2], tbox[1]:tbox[3]] = imgres
+    imgres = cv2_zoom(mask, resize / np.asarray(mask.shape), order=0)
+    res[tbox[0] : tbox[2], tbox[1] : tbox[3]] = imgres
     return res
 
 
@@ -113,18 +120,18 @@ def read_dicoms(path, primary=True, original=True):
     for fname in tqdm(allfnames):
         filename_ = os.path.splitext(os.path.split(fname)[1])
         i += 1
-        if filename_[0] != 'DICOMDIR':
+        if filename_[0] != "DICOMDIR":
             try:
                 dicom_header = pyd.dcmread(fname, defer_size=100, stop_before_pixels=True, force=True)
                 if dicom_header is not None:
-                    if 'ImageType' in dicom_header:
+                    if "ImageType" in dicom_header:
                         if primary:
-                            is_primary = all([x in dicom_header.ImageType for x in ['PRIMARY']])
+                            is_primary = all([x in dicom_header.ImageType for x in ["PRIMARY"]])
                         else:
                             is_primary = True
 
                         if original:
-                            is_original = all([x in dicom_header.ImageType for x in ['ORIGINAL']])
+                            is_original = all([x in dicom_header.ImageType for x in ["ORIGINAL"]])
                         else:
                             is_original = True
 
@@ -132,11 +139,18 @@ def read_dicoms(path, primary=True, original=True):
                         #     ck = dicom_header.ConvolutionKernel
                         # else:
                         #     ck = 'unknown'
-                        if is_primary and is_original and 'LOCALIZER' not in dicom_header.ImageType:
-                            h_info_wo_name = [dicom_header.StudyInstanceUID, dicom_header.SeriesInstanceUID,
-                                              dicom_header.ImagePositionPatient]
-                            h_info = [dicom_header.StudyInstanceUID, dicom_header.SeriesInstanceUID, fname,
-                                      dicom_header.ImagePositionPatient]
+                        if is_primary and is_original and "LOCALIZER" not in dicom_header.ImageType:
+                            h_info_wo_name = [
+                                dicom_header.StudyInstanceUID,
+                                dicom_header.SeriesInstanceUID,
+                                dicom_header.ImagePositionPatient,
+                            ]
+                            h_info = [
+                                dicom_header.StudyInstanceUID,
+                                dicom_header.SeriesInstanceUID,
+                                fname,
+                                dicom_header.ImagePositionPatient,
+                            ]
                             if h_info_wo_name not in unique_set:
                                 unique_set.append(h_info_wo_name)
                                 dcm_header_info.append(h_info)
@@ -155,7 +169,7 @@ def read_dicoms(path, primary=True, original=True):
     # dcm_parameters = np.asarray(dcm_parameters)[sidx]
     vol_unique = np.unique(conc, return_index=1, return_inverse=1)  # unique volumes
     n_vol = len(vol_unique[1])
-    logging.info('There are ' + str(n_vol) + ' volumes in the study')
+    logging.info("There are " + str(n_vol) + " volumes in the study")
 
     relevant_series = []
     relevant_volumes = []
@@ -178,13 +192,13 @@ def read_dicoms(path, primary=True, original=True):
 
 def get_input_image(path):
     if os.path.isfile(path):
-        logging.info(f'Read input: {path}')
+        logging.info(f"Read input: {path}")
         input_image = sitk.ReadImage(path)
     else:
-        logging.info(f'Looking for dicoms in {path}')
+        logging.info(f"Looking for dicoms in {path}")
         dicom_vols = read_dicoms(path, original=False, primary=False)
         if len(dicom_vols) < 1:
-            sys.exit('No dicoms found!')
+            sys.exit("No dicoms found!")
         if len(dicom_vols) > 1:
             logging.warning("There are more than one volume in the path, will take the largest one")
         input_image = dicom_vols[np.argmax([np.prod(v.GetSize()) for v in dicom_vols], axis=0)]
@@ -192,9 +206,9 @@ def get_input_image(path):
 
 
 def postrocessing(label_image, spare=[]):
-    '''some post-processing mapping small label patches to the neighbout whith which they share the
-        largest border. All connected components smaller than min_area will be removed
-    '''
+    """some post-processing mapping small label patches to the neighbout whith which they share the
+    largest border. All connected components smaller than min_area will be removed
+    """
 
     # merge small components to neighbours
     regionmask = skimage.measure.label(label_image)
@@ -212,9 +226,11 @@ def postrocessing(label_image, spare=[]):
             region_to_lobemap[r.label] = r.max_intensity
 
     for r in tqdm(regions):
-        if (r.area < origlabels_maxsub[r.max_intensity] or r.max_intensity in spare) and r.area>2: # area>2 improves runtime because small areas 1 and 2 voxel will be ignored
+        if (
+            r.area < origlabels_maxsub[r.max_intensity] or r.max_intensity in spare
+        ) and r.area > 2:  # area>2 improves runtime because small areas 1 and 2 voxel will be ignored
             bb = bbox_3D(regionmask == r.label)
-            sub = regionmask[bb[0]:bb[1], bb[2]:bb[3], bb[4]:bb[5]]
+            sub = regionmask[bb[0] : bb[1], bb[2] : bb[3], bb[4] : bb[5]]
             dil = ndimage.binary_dilation(sub == r.label)
             neighbours, counts = np.unique(sub[dil], return_counts=True)
             mapto = r.label
@@ -227,13 +243,15 @@ def postrocessing(label_image, spare=[]):
                     myarea = r.area
             regionmask[regionmask == r.label] = mapto
             # print(str(region_to_lobemap[r.label]) + ' -> ' + str(region_to_lobemap[mapto])) # for debugging
-            if regions[regionlabels.index(mapto)].area == origlabels_maxsub[
-                regions[regionlabels.index(mapto)].max_intensity]:
+            if (
+                regions[regionlabels.index(mapto)].area
+                == origlabels_maxsub[regions[regionlabels.index(mapto)].max_intensity]
+            ):
                 origlabels_maxsub[regions[regionlabels.index(mapto)].max_intensity] += myarea
-            regions[regionlabels.index(mapto)].__dict__['_cache']['area'] += myarea
+            regions[regionlabels.index(mapto)].__dict__["_cache"]["area"] += myarea
 
     outmask_mapped = region_to_lobemap[regionmask]
-    outmask_mapped[outmask_mapped==spare] = 0 
+    outmask_mapped[outmask_mapped == spare] = 0
 
     if outmask_mapped.shape[0] == 1:
         # holefiller = lambda x: ndimage.morphology.binary_fill_holes(x[0])[None, :, :] # This is bad for slices that show the liver
@@ -263,9 +281,9 @@ def bbox_3D(labelmap, margin=2):
     zmin, zmax = np.where(z)[0][[0, -1]]
     zmin -= margin if zmin >= margin else zmin
     zmax += margin if zmax <= shape[2] - margin else zmax
-    
-    if rmax-rmin == 0:
-        rmax = rmin+1
+
+    if rmax - rmin == 0:
+        rmax = rmin + 1
 
     return np.asarray([rmin, rmax, cmin, cmax, zmin, zmax])
 
@@ -277,3 +295,18 @@ def keep_largest_connected_component(mask):
     max_region = np.argsort(resizes)[-1] + 1
     mask = mask == max_region
     return mask
+
+
+def cv2_zoom(img: np.ndarray, scale: Union[Sequence, float], order: int = 0) -> np.ndarray:
+    assert order in ORDER2OCVINTER, f"Only order from {ORDER2OCVINTER} are supported"
+
+    if isinstance(scale, float):
+        scale = (scale, scale)
+
+    if img.dtype.char == "?":
+        img = img.astype(np.uint8)
+
+    out_shape = tuple((np.asarray(img.shape[:2]) * np.asarray(scale)).round().astype(int)[::-1])
+    out_img = cv2.resize(img, out_shape, ORDER2OCVINTER[order])
+
+    return out_img
