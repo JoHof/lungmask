@@ -1,6 +1,7 @@
 import logging
 import sys
 import warnings
+from typing import Optional
 
 import numpy as np
 import SimpleITK as sitk
@@ -27,8 +28,15 @@ model_urls = {
 
 
 def apply(
-    image=None, inimg_raw=None, model=None, force_cpu=False, batch_size=20, volume_postprocessing=True, noHU=False
-):
+    image: sitk.Image = None,
+    inimg_raw: np.ndarray = None,
+    model: Optional[torch.nn.Module] = None,
+    force_cpu: bool = False,
+    batch_size: int = 20,
+    volume_postprocessing: bool = True,
+    noHU: bool = False,
+    enable_amp: bool = True,
+) -> np.ndarray:
 
     assert (image is not None) or (inimg_raw is not None), "Either image or array should be not None"
 
@@ -76,11 +84,12 @@ def apply(
     timage_res = np.empty((np.append(0, tvolslices[0].shape)), dtype=np.uint8)
 
     with torch.no_grad():
-        for X in tqdm(dataloader_val):
-            X = X.float().to(device)
-            prediction = model(X)
-            pls = torch.max(prediction, 1)[1].detach().cpu().numpy().astype(np.uint8)
-            timage_res = np.vstack((timage_res, pls))
+        with torch.cuda.amp.autocast(enabled=enable_amp):
+            for X in tqdm(dataloader_val):
+                X = X.float().to(device)
+                prediction = model(X)
+                pls = torch.max(prediction, 1)[1].detach().cpu().numpy().astype(np.uint8)
+                timage_res = np.vstack((timage_res, pls))
 
     # postprocessing includes removal of small connected components, hole filling and mapping of small components to
     # neighbors
