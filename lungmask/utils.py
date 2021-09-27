@@ -305,7 +305,7 @@ def cv2_zoom(img: np.ndarray, scale: Union[Sequence, float], order: int = 0) -> 
 
     if img.dtype == np.bool:
         img = img.astype(np.uint8)
-    if img.dtype in (np.int32, np.int64):
+    if np.issubdtype(img.dtype, np.integer) and img.dtype != np.uint8:
         img = img.astype(np.float64)
 
     out_shape = tuple((np.asarray(img.shape[:2]) * np.asarray(scale)).round().astype(int)[::-1])
