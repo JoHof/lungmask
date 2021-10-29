@@ -59,8 +59,7 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
         sanity = [(tvolslices[x]>0.6).sum()>25000 for x in range(len(tvolslices))]
         tvolslices = tvolslices[sanity]
     torch_ds_val = utils.LungLabelsDS_inf(tvolslices)
-    dataloader_val = torch.utils.data.DataLoader(torch_ds_val, batch_size=batch_size, shuffle=False, num_workers=1,
-                                                 pin_memory=False)
+    dataloader_val = torch.utils.data.DataLoader(torch_ds_val, batch_size=batch_size, shuffle=False, pin_memory=False)
 
     timage_res = np.empty((np.append(0, tvolslices[0].shape)), dtype=np.uint8)
 
