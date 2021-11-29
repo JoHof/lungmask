@@ -36,6 +36,7 @@ def apply(
     volume_postprocessing: bool = True,
     noHU: bool = False,
     enable_amp: bool = True,
+    verbose: bool = True,
 ) -> np.ndarray:
 
     assert (image is not None) or (inimg_raw is not None), "Either image or array should be not None"
@@ -85,7 +86,7 @@ def apply(
 
     with torch.no_grad():
         with torch.cuda.amp.autocast(enabled=enable_amp):
-            for X in tqdm(dataloader_val):
+            for X in tqdm(dataloader_val, disable=not verbose):
                 X = X.float().to(device)
                 prediction = model(X)
                 pls = torch.max(prediction, 1)[1].detach().cpu().numpy().astype(np.uint8)
@@ -94,7 +95,7 @@ def apply(
     # postprocessing includes removal of small connected components, hole filling and mapping of small components to
     # neighbors
     if volume_postprocessing:
-        outmask = utils.postrocessing(timage_res)
+        outmask = utils.postrocessing(timage_res, verbose=verbose)
     else:
         outmask = timage_res
 
