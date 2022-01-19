@@ -309,6 +309,6 @@ def cv2_zoom(img: np.ndarray, scale: Union[Sequence, float], order: int = 0) -> 
         img = img.astype(np.float64)
 
     out_shape = tuple((np.asarray(img.shape[:2]) * np.asarray(scale)).round().astype(int)[::-1])
-    out_img = cv2.resize(img, out_shape, ORDER2OCVINTER[order])
+    out_img = cv2.resize(img, out_shape, interpolation=ORDER2OCVINTER[order])
 
     return out_img
