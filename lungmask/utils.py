@@ -14,7 +14,7 @@ import skimage.morphology
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-ORDER2OCVINTER = {0: cv2.INTER_NEAREST, 1: cv2.INTER_LINEAR, 3: cv2.INTER_CUBIC}
+ORDER2OCVINTER = {0: cv2.INTER_NEAREST, 1: cv2.INTER_LINEAR, 2: cv2.INTER_AREA, 3: cv2.INTER_CUBIC}
 
 
 def preprocess(img, label=None, resolution=[192, 192]):
@@ -92,7 +92,8 @@ def crop_and_resize(img, mask=None, width=192, height=192):
 def reshape_mask(mask, tbox, origsize):
     res = np.ones(origsize) * 0
     resize = [tbox[2] - tbox[0], tbox[3] - tbox[1]]
-    imgres = cv2_zoom(mask, resize / np.asarray(mask.shape), order=0)
+    # Change order 0 (nearest) to 2 (area)
+    imgres = cv2_zoom(mask, resize / np.asarray(mask.shape), order=2)
     res[tbox[0] : tbox[2], tbox[1] : tbox[3]] = imgres
     return res
 
