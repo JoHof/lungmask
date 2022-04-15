@@ -45,7 +45,9 @@ def preprocess(img, label=None, resolution=[192, 192]):
 def simple_bodymask(img):
     maskthreshold = -500
     oshape = img.shape
-    img = cv2_zoom(img, 128 / np.asarray(img.shape), order=0)
+    # PATCH: order is linear to reproduce behaviour before interpolation bug
+    # Set order to 0 after current version is no longer needed
+    img = cv2_zoom(img, 128 / np.asarray(img.shape), order=1)
     bodymask = img > maskthreshold
     bodymask = ndimage.binary_closing(bodymask)
     bodymask = ndimage.binary_fill_holes(bodymask, structure=np.ones((3, 3))).astype(int)
@@ -57,7 +59,9 @@ def simple_bodymask(img):
         bodymask = bodymask == max_region
         bodymask = ndimage.binary_dilation(bodymask, iterations=2)
     real_scaling = np.asarray(oshape) / 128
-    return cv2_zoom(bodymask, real_scaling, order=0)
+    # PATCH: order is linear to reproduce behaviour before interpolation bug
+    # Set order to 0 after current version is no longer needed
+    return cv2_zoom(bodymask, real_scaling, order=1)
 
 
 def crop_and_resize(img, mask=None, width=192, height=192):
@@ -93,7 +97,7 @@ def reshape_mask(mask, tbox, origsize):
     res = np.ones(origsize) * 0
     resize = [tbox[2] - tbox[0], tbox[3] - tbox[1]]
     # Change order 0 (nearest) to 2 (area)
-    imgres = cv2_zoom(mask, resize / np.asarray(mask.shape), order=2)
+    imgres = cv2_zoom(mask, resize / np.asarray(mask.shape), order=0, pseudo_linear=True)
     res[tbox[0] : tbox[2], tbox[1] : tbox[3]] = imgres
     return res
 
@@ -298,7 +302,9 @@ def keep_largest_connected_component(mask):
     return mask
 
 
-def cv2_zoom(img: np.ndarray, scale: Union[Sequence, float], order: int = 0) -> np.ndarray:
+def cv2_zoom(
+    img: np.ndarray, scale: Union[Sequence, float], order: int = 0, pseudo_linear: bool = False, lin_thr: float = 0.3
+) -> np.ndarray:
     assert order in ORDER2OCVINTER, f"Only order from {ORDER2OCVINTER} are supported"
 
     if isinstance(scale, float):
@@ -310,6 +316,20 @@ def cv2_zoom(img: np.ndarray, scale: Union[Sequence, float], order: int = 0) -> 
         img = img.astype(np.float64)
 
     out_shape = tuple((np.asarray(img.shape[:2]) * np.asarray(scale)).round().astype(int)[::-1])
-    out_img = cv2.resize(img, out_shape, interpolation=ORDER2OCVINTER[order])
+    out_shape_w_ch = list(out_shape[::-1]) + list(img.shape[2:])
+
+    # Patch
+    # Previously we had linear interpolation instead of area interpolation
+    if pseudo_linear:
+        uniques = np.unique(img)
+        out_img = np.zeros(out_shape_w_ch, dtype=img.dtype)
+        for value in uniques[uniques != 0]:
+            img_c = (img == value).astype(img.dtype) * value
+            output = cv2.resize(img_c, out_shape, interpolation=cv2.INTER_LINEAR)
+            output[output >= value * lin_thr] = value
+            output[output != value] = 0
+            out_img += output
+    else:
+        out_img = cv2.resize(img, out_shape, interpolation=ORDER2OCVINTER[order])
 
     return out_img
