@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from typing import Sequence, Union
+from typing import Tuple, Union
 
 import cv2
 import fill_voids
@@ -303,9 +303,26 @@ def keep_largest_connected_component(mask):
 
 
 def cv2_zoom(
-    img: np.ndarray, scale: Union[Sequence, float], order: int = 0, pseudo_linear: bool = False, lin_thr: float = 0.3
+    img: np.ndarray, scale: Union[Tuple[float, float], float], order: int = 0, pseudo_linear: bool = False, lin_thr: float = 0.3
 ) -> np.ndarray:
-    assert order in ORDER2OCVINTER, f"Only order from {ORDER2OCVINTER} are supported"
+    """
+    Arguments
+    ---------
+        img             (h, w[, ch]) : [num] 0-channel or multichannel image.
+        scale   (scale_x[, scale_y]) : Scale for interpolation.
+        order                  (int) : Numeral encoding of interpolation order.
+        pseudo_linear         (bool) : If True, apply linear interpolation and value thresholding 
+                                       to each individual mask value.
+        lin_thr              (float) : (Only used if `pseudo_linear=True`) After linear interpolation 
+                                       all values above `lin_thr` are set to the mask value.
+
+    Returns
+    -------
+        out_img     (h_o, w_o[, ch]) : Interpolated image.
+
+    Interpolates 2D images.
+    """
+    assert order in ORDER2OCVINTER, f"Only order from dict {ORDER2OCVINTER} are supported"
 
     if isinstance(scale, float):
         scale = (scale, scale)
@@ -316,13 +333,11 @@ def cv2_zoom(
         img = img.astype(np.float64)
 
     out_shape = tuple((np.asarray(img.shape[:2]) * np.asarray(scale)).round().astype(int)[::-1])
-    out_shape_w_ch = list(out_shape[::-1]) + list(img.shape[2:])
 
-    # Patch
-    # Previously we had linear interpolation instead of area interpolation
     if pseudo_linear:
         uniques = np.unique(img)
-        out_img = np.zeros(out_shape_w_ch, dtype=img.dtype)
+        out_shape_with_channels = list(out_shape[::-1]) + list(img.shape[2:])
+        out_img = np.zeros(out_shape_with_channels, dtype=img.dtype)
         for value in uniques[uniques != 0]:
             img_c = (img == value).astype(img.dtype) * value
             output = cv2.resize(img_c, out_shape, interpolation=cv2.INTER_LINEAR)
