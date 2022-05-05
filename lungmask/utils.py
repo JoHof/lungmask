@@ -343,7 +343,7 @@ def cv2_zoom(
             output = cv2.resize(img_c, out_shape, interpolation=cv2.INTER_LINEAR)
             output[output >= value * lin_thr] = value
             output[output != value] = 0
-            out_img += output
+            out_img[output == value] = output[output == value]
     else:
         out_img = cv2.resize(img, out_shape, interpolation=ORDER2OCVINTER[order])
 
