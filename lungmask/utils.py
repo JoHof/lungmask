@@ -98,7 +98,7 @@ class LungLabelsDS_inf(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, idx):
-        return self.dataset[idx, None, :, :].astype(float)
+        return self.dataset[idx, None, :, :].astype(np.float32)
 
 
 def read_dicoms(path, primary=True, original=True):
