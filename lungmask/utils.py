@@ -155,7 +155,10 @@ def read_dicoms(path, primary=True, original=True):
     # dcm_parameters = np.asarray(dcm_parameters)[sidx]
     vol_unique = np.unique(conc, return_index=1, return_inverse=1)  # unique volumes
     n_vol = len(vol_unique[1])
-    logging.info('There are ' + str(n_vol) + ' volumes in the study')
+    if n_vol == 1:
+        logging.info('There is ' + str(n_vol) + ' volume in the study')
+    else:
+        logging.info('There are ' + str(n_vol) + ' volumes in the study')
 
     relevant_series = []
     relevant_volumes = []
@@ -191,7 +194,7 @@ def get_input_image(path):
     return input_image
 
 
-def postrocessing(label_image, spare=[]):
+def postprocessing(label_image, spare=[]):
     '''some post-processing mapping small label patches to the neighbout whith which they share the
         largest border. All connected components smaller than min_area will be removed
     '''
