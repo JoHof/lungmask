@@ -223,7 +223,7 @@ def postrocessing(label_image, spare=[]):
             maxmap = 0
             myarea = 0
             for ix, n in enumerate(neighbours):
-                if n != 0 and n != r.label and counts[ix] > maxmap and n != spare:
+                if n != 0 and n != r.label and counts[ix] > maxmap and n not in spare:
                     maxmap = counts[ix]
                     mapto = n
                     myarea = r.area
@@ -235,7 +235,7 @@ def postrocessing(label_image, spare=[]):
             regions[regionlabels.index(mapto)].__dict__['_cache']['area'] += myarea
 
     outmask_mapped = region_to_lobemap[regionmask]
-    outmask_mapped[outmask_mapped==spare] = 0 
+    outmask_mapped[np.isin(outmask_mapped, spare)] = 0
 
     if outmask_mapped.shape[0] == 1:
         # holefiller = lambda x: ndimage.morphology.binary_fill_holes(x[0])[None, :, :] # This is bad for slices that show the liver
