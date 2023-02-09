@@ -155,7 +155,10 @@ def read_dicoms(path, primary=True, original=True):
     # dcm_parameters = np.asarray(dcm_parameters)[sidx]
     vol_unique = np.unique(conc, return_index=1, return_inverse=1)  # unique volumes
     n_vol = len(vol_unique[1])
-    logging.info('There are ' + str(n_vol) + ' volumes in the study')
+    if n_vol == 1:
+        logging.info('There is ' + str(n_vol) + ' volume in the study')
+    else:
+        logging.info('There are ' + str(n_vol) + ' volumes in the study')
 
     relevant_series = []
     relevant_volumes = []
@@ -191,7 +194,7 @@ def get_input_image(path):
     return input_image
 
 
-def postrocessing(label_image, spare=[]):
+def postprocessing(label_image, spare=[]):
     '''some post-processing mapping small label patches to the neighbout whith which they share the
         largest border. All connected components smaller than min_area will be removed
     '''
@@ -223,7 +226,7 @@ def postrocessing(label_image, spare=[]):
             maxmap = 0
             myarea = 0
             for ix, n in enumerate(neighbours):
-                if n != 0 and n != r.label and counts[ix] > maxmap and n != spare:
+                if n != 0 and n != r.label and counts[ix] > maxmap and n not in spare:
                     maxmap = counts[ix]
                     mapto = n
                     myarea = r.area
@@ -235,7 +238,7 @@ def postrocessing(label_image, spare=[]):
             regions[regionlabels.index(mapto)].__dict__['_cache']['area'] += myarea
 
     outmask_mapped = region_to_lobemap[regionmask]
-    outmask_mapped[outmask_mapped==spare] = 0 
+    outmask_mapped[np.isin(outmask_mapped, spare)] = 0
 
     if outmask_mapped.shape[0] == 1:
         # holefiller = lambda x: ndimage.morphology.binary_fill_holes(x[0])[None, :, :] # This is bad for slices that show the liver

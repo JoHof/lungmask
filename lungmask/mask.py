@@ -73,7 +73,7 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
     # postprocessing includes removal of small connected components, hole filling and mapping of small components to
     # neighbors
     if volume_postprocessing:
-        outmask = utils.postrocessing(timage_res)
+        outmask = utils.postprocessing(timage_res)
     else:
         outmask = timage_res
 
@@ -110,7 +110,7 @@ def get_model(modeltype, modelname, modelpath=None, n_classes=3):
 
 
 def apply_fused(image, basemodel = 'LTRCLobes', fillmodel = 'R231', force_cpu=False, batch_size=20, volume_postprocessing=True, noHU=False):
-    '''Will apply basemodel and use fillmodel to mitiage false negatives'''
+    '''Will apply basemodel and use fillmodel to mitigate false negatives'''
     mdl_r = get_model('unet',fillmodel)
     mdl_l = get_model('unet',basemodel)
     logging.info("Apply: %s" % basemodel)
@@ -121,4 +121,4 @@ def apply_fused(image, basemodel = 'LTRCLobes', fillmodel = 'R231', force_cpu=Fa
     res_l[np.logical_and(res_l==0, res_r>0)] = spare_value
     res_l[res_r==0] = 0
     logging.info("Fusing results... this may take up to several minutes!")
-    return utils.postrocessing(res_l, spare=[spare_value])
+    return utils.postprocessing(res_l, spare=[spare_value])
