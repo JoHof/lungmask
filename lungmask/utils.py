@@ -13,20 +13,15 @@ import skimage.morphology
 
 
 def preprocess(img, label=None, resolution=[192, 192]):
-    imgmtx = np.copy(img)
-    lblsmtx = np.copy(label)
-
-    imgmtx[imgmtx < -1024] = -1024
-    imgmtx[imgmtx > 600] = 600
+    imgmtx = np.clip(img, -1024, 600)
     cip_xnew = []
     cip_box = []
     cip_mask = []
     for i in range(imgmtx.shape[0]):
         if label is None:
-            (im, m, box) = crop_and_resize(imgmtx[i, :, :], width=resolution[0], height=resolution[1])
+            (im, m, box) = crop_and_resize(imgmtx[i], width=resolution[0], height=resolution[1])
         else:
-            (im, m, box) = crop_and_resize(imgmtx[i, :, :], mask=lblsmtx[i, :, :], width=resolution[0],
-                                           height=resolution[1])
+            (im, m, box) = crop_and_resize(imgmtx[i], mask=label[i], width=resolution[0], height=resolution[1])
             cip_mask.append(m)
         cip_xnew.append(im)
         cip_box.append(box)
@@ -252,27 +247,26 @@ def postprocessing(label_image, spare=[]):
 
     return outmask
 
-
 def bbox_3D(labelmap, margin=2):
     shape = labelmap.shape
-    r = np.any(labelmap, axis=(1, 2))
-    c = np.any(labelmap, axis=(0, 2))
-    z = np.any(labelmap, axis=(0, 1))
+    r = np.zeros(shape[0], dtype=bool)
+    c = np.zeros(shape[1], dtype=bool)
+    z = np.zeros(shape[2], dtype=bool)
+    np.any(labelmap, axis=1, out=r)
+    np.any(labelmap, axis=0, out=c)
+    np.any(labelmap, axis=2, out=z)
 
-    rmin, rmax = np.where(r)[0][[0, -1]]
-    rmin -= margin if rmin >= margin else rmin
-    rmax += margin if rmax <= shape[0] - margin else rmax
-    cmin, cmax = np.where(c)[0][[0, -1]]
-    cmin -= margin if cmin >= margin else cmin
-    cmax += margin if cmax <= shape[1] - margin else cmax
-    zmin, zmax = np.where(z)[0][[0, -1]]
-    zmin -= margin if zmin >= margin else zmin
-    zmax += margin if zmax <= shape[2] - margin else zmax
-    
-    if rmax-rmin == 0:
-        rmax = rmin+1
+    bbox = np.zeros(6, dtype=int)
+    for axis, arr in enumerate((r, c, z)):
+        if len(arr) > 0:
+            bbox[axis*2] = min(arr.nonzero()[0])
+            bbox[axis*2+1] = max(arr.nonzero()[0])
+            bbox[axis*2] -= margin if bbox[axis*2] >= margin else bbox[axis*2]
+            bbox[axis*2+1] += margin if bbox[axis*2+1] <= shape[axis] - margin else bbox[axis*2+1]
+    if bbox[1] - bbox[0] == 0:
+        bbox[1] += 1
 
-    return np.asarray([rmin, rmax, cmin, cmax, zmin, zmax])
+    return bbox
 
 
 def keep_largest_connected_component(mask):
