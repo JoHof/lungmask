@@ -1,0 +1,42 @@
+repos:
+
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+    -   id: check-ast
+    -   id: debug-statements
+    -   id: end-of-file-fixer
+        exclude: resources/
+    -   id: requirements-txt-fixer
+    -   id: trailing-whitespace
+    -   id: check-added-large-files
+        args: ['--maxkb=500']
+
+
+-   repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+    -   id: black
+        language_version: python3
+
+-   repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
+    hooks:
+    - id: flake8
+
+-   repo: https://github.com/pre-commit/mirrors-isort
+    rev: v5.10.1
+    hooks:
+    -   id: isort
+
+-   repo: https://github.com/jorisroovers/gitlint
+    rev: v0.19.1
+    hooks:
+    - id: gitlint
+      entry: gitlint -c title-max-length.line-length=60 --ignore B6,B7 --msg-filename
+      stages: [commit-msg]
+
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.2.0
+    hooks:
+      - id: mypy
