@@ -4,7 +4,7 @@ This package provides trained U-net models for lung segmentation. For now, four 
 
 - U-net(R231): This model was trained on a large and diverse dataset that covers a wide range of visual variabiliy. The model performs segmentation on individual slices, extracts right-left lung seperately includes airpockets, tumors and effusions. The trachea will not be included in the lung segmentation. https://doi.org/10.1186/s41747-020-00173-2
 
-- U-net(LTRCLobes): This model was trained on a subset of the [LTRC](https://ltrcpublic.com) dataset. The model performs segmentation of individual lung-lobes but yields limited performance when dense pathologies are present or when fissures are not visible at every slice. 
+- U-net(LTRCLobes): This model was trained on a subset of the [LTRC](https://ltrcpublic.com) dataset. The model performs segmentation of individual lung-lobes but yields limited performance when dense pathologies are present or when fissures are not visible at every slice.
 
 - U-net(LTRCLobes_R231): This will run the R231 and LTRCLobes model and fuse the results. False negatives from LTRCLobes will be filled by R231 predictions and mapped to a neighbor label. False positives from LTRCLobes will be removed. The fusing process is computationally intensive and can, depdending on the data and results, take up to several minutes per volume.
 
@@ -60,33 +60,34 @@ lungmask -h
 ### As a python module:
 
 ```
-from lungmask import mask
+from lungmask import LMInferer
 import SimpleITK as sitk
 
+inferer = LMInferer()
+
 input_image = sitk.ReadImage(INPUT)
-segmentation = mask.apply(input_image)  # default model is U-net(R231)
+segmentation = inferer.apply(input_image)  # default model is U-net(R231)
 ```
 input_image has to be a SimpleITK object.
 
 Load an alternative model like so:
 ```
-model = mask.get_model('unet','LTRCLobes')
-segmentation = mask.apply(input_image, model)
+inferer = LMInferer(modelname="R231CovidWeb")
 ```
 
-To use the model fusing capability for LTRCLobes_R231 use:
+To use the model fusing capability for (e.g. LTRCLobes_R231) use:
 ```
-segmentation = mask.apply_fused(input_image)
+inferer = LMInferer(modelname='LTRCLobes', fillmodel='R231')
 ```
 
 #### Numpy array support
 As of version 0.2.9, numpy arrays are supported as input volumes. This mode assumes the input numpy array has the following format for each axis:
 * first axis containing slices
 * second axis with chest to back
-* third axis with right to left 
+* third axis with right to left
 
 ## Limitations
-The model works on full slices only. The slice to process has to show the full lung and the lung has to be surrounded by tissue in order to get segmented. However, the model is quite stable to cases with a cropped field of view as long as the lung is surrounded by tissue. 
+The model works on full slices only. The slice to process has to show the full lung and the lung has to be surrounded by tissue in order to get segmented. However, the model is quite stable to cases with a cropped field of view as long as the lung is surrounded by tissue.
 
 ## COVID-19 Web
 ```
