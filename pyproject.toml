@@ -1,0 +1,16 @@
+[tool.isort]
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+line_length = 88
+profile = "black"
+
+[tool.mypy]
+ignore_missing_imports = true
+strict_optional = false
+no_implicit_optional = true
+
+[tool.pyright]
+include = ["lungmask"]
