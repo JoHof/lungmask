@@ -1,4 +1,6 @@
 __pycache__/
 .idea/
-lungmask.egg-info/
-lungmask/.ipynb_checkpoints/
+*.egg-info
+**/.ipynb_checkpoints/
+*.pyc
+**/.coverage*
