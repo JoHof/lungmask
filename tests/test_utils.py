@@ -1,10 +1,7 @@
 import os
 
 import numpy as np
-import pydicom as pd
-import pydicom as pyd
 import SimpleITK as sitk
-from pydicom.dataset import FileMetaDataset
 
 from lungmask.utils import (
     bbox_3D,
@@ -18,6 +15,9 @@ from lungmask.utils import (
 )
 
 # creating test dicom data for reference
+# import pydicom as pd
+# import pydicom as pyd
+# from pydicom.dataset import FileMetaDataset
 #
 # studyuid = pyd.uid.generate_uid()
 # seriesuid = pyd.uid.generate_uid()
