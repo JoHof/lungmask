@@ -7,7 +7,7 @@ import numpy as np
 import pkg_resources  # type: ignore
 import SimpleITK as sitk
 
-from lungmask import mask, utils
+from lungmask import LMInferer, utils
 
 
 def path(string):
@@ -48,7 +48,6 @@ def main():
     parser.add_argument(
         "--classes",
         help="spcifies the number of output classes of the model",
-        default=3,
     )
     parser.add_argument(
         "--cpu",
@@ -86,6 +85,11 @@ def main():
     argsin = sys.argv[1:]
     args = parser.parse_args(argsin)
 
+    if args.classes is not None:
+        logging.warn(
+            "!!! Warning: The `classes` parameter is deprecated and will be removed in the next version !!!"
+        )
+
     batchsize = args.batchsize
     if args.cpu:
         batchsize = 1
@@ -98,29 +102,30 @@ def main():
         assert (
             args.modelpath is None
         ), "Modelpath can not be specified for LTRCLobes_R231 mode"
-        result = mask.apply_fused(
-            input_image,
+        inferer = LMInferer(
+            modelname="LTRCLobes",
             force_cpu=args.cpu,
+            fillmodel="R231",
             batch_size=batchsize,
             volume_postprocessing=not (args.nopostprocess),
             noHU=args.noHU,
             tqdm_disable=args.noprogress,
         )
+        result = inferer.apply(input_image)
     else:
-        model = mask.get_model(args.modelname, args.modelpath, args.classes)
-        result = mask.apply(
-            input_image,
-            model,
+        inferer = LMInferer(
+            modelname=args.modelname,
+            modelpath=args.modelpath,
             force_cpu=args.cpu,
             batch_size=batchsize,
             volume_postprocessing=not (args.nopostprocess),
             noHU=args.noHU,
             tqdm_disable=args.noprogress,
         )
+        result = inferer.apply(input_image)
 
     if args.noHU:
         file_ending = args.output.split(".")[-1]
-        print(file_ending)
         if file_ending in ["jpg", "jpeg", "png"]:
             result = (result / (result.max()) * 255).astype(np.uint8)
         result = result[0]
