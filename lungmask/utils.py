@@ -252,6 +252,7 @@ def postprocessing(
     Returns:
         np.ndarray: Postprocessed volume
     """
+    logging.info("Postprocessing")
 
     # CC analysis
     regionmask = skimage.measure.label(label_image)
