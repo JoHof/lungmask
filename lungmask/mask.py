@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 import warnings
 from typing import Optional, Union
@@ -41,15 +42,12 @@ MODEL_URLS = {
 }
 
 
-def get_model(
-    modelname: str, modelpath: Optional[str] = None, n_classes: int = 3
-) -> torch.nn.Module:
+def get_model(modelname: str, modelpath: Optional[str] = None) -> torch.nn.Module:
     """Loads specific model and state
 
     Args:
         modelname (str): Modelname (e.g. R231, LTRCLobes or R231CovidWeb)
         modelpath (Optional[str], optional): Path to statedict, if not provided will be downloaded automatically. Modelname will be ignored if provided. Defaults to None.
-        n_classes (int, optional): Number of classes. Will be automatically set if modelname is provided. Defaults to 3.
 
     Returns:
         torch.nn.Module: Loaded model in eval state
@@ -61,6 +59,8 @@ def get_model(
         )
     else:
         state_dict = torch.load(modelpath, map_location=torch.device("cpu"))
+
+    n_classes = len(list(state_dict.values())[-1])
 
     model = UNet(
         n_classes=n_classes,
@@ -78,19 +78,23 @@ def get_model(
 class LMInferer:
     def __init__(
         self,
-        modelname="R231",
+        modelname: str = "R231",
+        modelpath: Optional[str] = None,
         fillmodel: Optional[str] = None,
-        force_cpu=False,
-        batch_size=20,
-        volume_postprocessing=True,
-        noHU=False,
-        tqdm_disable=False,
+        fillmodel_path: Optional[str] = None,
+        force_cpu: bool = False,
+        batch_size: int = 20,
+        volume_postprocessing: bool = True,
+        noHU: bool = False,
+        tqdm_disable: bool = False,
     ):
         """LungMaskInference
 
         Args:
             modelname (str, optional): Model to be applied. Defaults to 'R231'.
+            modelpath (str, optional): Path to modeleights. `modelname` parameter will be ignored if provided. Defaults to None.
             fillmodel (Optional[str], optional): Fillmodel to be applied. Defaults to None.
+            fillmodel_path (Optional[str], optional): Path to weights for fillmodel. `fillmodel` parameter will be ignored if provided. Defaults to None.
             force_cpu (bool, optional): Will not use GPU is `True`. Defaults to False.
             batch_size (int, optional): Batch size. Defaults to 20.
             volume_postprocessing (bool, optional): If `Fales` will not perform postprocessing (connected component analysis). Defaults to True.
@@ -104,6 +108,13 @@ class LMInferer:
             assert (
                 fillmodel in MODEL_URLS
             ), "Modelname not found. Please choose from: {}".format(MODEL_URLS.keys())
+
+        # if paths provided, overwrite name
+        if modelpath is not None:
+            modelname = os.path.basename(modelpath)
+        if fillmodel_path is not None:
+            fillmodel = os.path.basename(fillmodel_path)
+
         self.fillmodel = fillmodel
         self.modelname = modelname
         self.force_cpu = force_cpu
@@ -112,7 +123,7 @@ class LMInferer:
         self.noHU = noHU
         self.tqdm_disable = tqdm_disable
 
-        self.model = get_model(self.modelname)
+        self.model = get_model(self.modelname, modelpath)
 
         self.device = torch.device("cpu")
         if not self.force_cpu:
@@ -124,7 +135,7 @@ class LMInferer:
 
         self.fillmodelm = None
         if self.fillmodel is not None:
-            self.fillmodelm = get_model(self.fillmodel)
+            self.fillmodelm = get_model(self.fillmodel, fillmodel_path)
             self.fillmodelm.to(self.device)
 
     def _inference(
@@ -250,6 +261,10 @@ def apply(
     noHU=False,
     tqdm_disable=False,
 ):
+    warnings.warn(
+        "The function `apply` will be removed in a future version. Please use the LMInferer class!",
+        DeprecationWarning,
+    )
     inferer = LMInferer(
         force_cpu=force_cpu,
         batch_size=batch_size,
@@ -272,6 +287,10 @@ def apply_fused(
     noHU=False,
     tqdm_disable=False,
 ):
+    warnings.warn(
+        "The function `apply_fused` will be removed in a future version. Please use the LMInferer class!",
+        DeprecationWarning,
+    )
     inferer = LMInferer(
         modelname=basemodel,
         force_cpu=force_cpu,

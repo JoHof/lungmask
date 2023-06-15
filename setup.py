@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="lungmask",
-    version="0.2.14",
+    version="0.2.15",
     author="Johannes Hofmanninger",
     author_email="johannes.hofmanninger@gmail.com",
     description="Package for automated lung segmentation in CT",
