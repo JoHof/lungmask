@@ -44,7 +44,7 @@ PyWavelets==1.4.1
 PyYAML==6.0
 requests==2.31.0
 scikit-image==0.20.0
-scipy==1.9.1
+scipy==1.10.0
 SimpleITK==2.2.1
 sympy==1.11.1
 tifffile==2023.4.12
