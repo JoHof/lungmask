@@ -1,4 +1,3 @@
-import logging
 import os
 import sys
 import warnings
@@ -12,15 +11,9 @@ from more_itertools import chunked
 from tqdm import tqdm
 
 from lungmask import utils
+from lungmask.logger import logger
 
 from .resunet import UNet
-
-logging.basicConfig(
-    stream=sys.stdout,
-    format="lungmask %(asctime)s %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    level=logging.INFO,
-)
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -130,7 +123,7 @@ class LMInferer:
             if torch.cuda.is_available():
                 self.device = torch.device("cuda")
             else:
-                logging.info("No GPU found, using CPU instead")
+                logger.info("No GPU found, using CPU instead")
         self.model.to(self.device)
 
         self.fillmodelm = None
@@ -241,14 +234,14 @@ class LMInferer:
         if self.fillmodel is None:
             return self._inference(image, self.model)
         else:
-            logging.info(f"Apply: {self.modelname}")
+            logger.info(f"Apply: {self.modelname}")
             res_l = self._inference(image, self.model)
-            logging.info(f"Apply: {self.fillmodel}")
+            logger.info(f"Apply: {self.fillmodel}")
             res_r = self._inference(image, self.fillmodelm)
             spare_value = res_l.max() + 1
             res_l[np.logical_and(res_l == 0, res_r > 0)] = spare_value
             res_l[res_r == 0] = 0
-            logging.info("Fusing results... this may take up to several minutes!")
+            logger.info("Fusing results... this may take up to several minutes!")
             return utils.postprocessing(res_l, spare=[spare_value])
 
 

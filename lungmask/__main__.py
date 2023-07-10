@@ -1,5 +1,4 @@
 import argparse
-import logging
 import os
 import sys
 
@@ -8,6 +7,7 @@ import pkg_resources  # type: ignore
 import SimpleITK as sitk
 
 from lungmask import LMInferer, utils
+from lungmask.logger import logger
 
 
 def path(string):
@@ -86,7 +86,7 @@ def main():
     args = parser.parse_args(argsin)
 
     if args.classes is not None:
-        logging.warn(
+        logger.warn(
             "!!! Warning: The `classes` parameter is deprecated and will be removed in the next version !!!"
         )
 
@@ -94,10 +94,10 @@ def main():
     if args.cpu:
         batchsize = 1
 
-    logging.info("Load model")
+    logger.info("Load model")
 
     input_image = utils.load_input_image(args.input, disable_tqdm=args.noprogress)
-    logging.info("Infer lungmask")
+    logger.info("Infer lungmask")
     if args.modelname == "LTRCLobes_R231":
         assert (
             args.modelpath is None
@@ -132,7 +132,7 @@ def main():
 
     result_out = sitk.GetImageFromArray(result)
     result_out.CopyInformation(input_image)
-    logging.info(f"Save result to: {args.output}")
+    logger.info(f"Save result to: {args.output}")
     sitk.WriteImage(result_out, args.output)
 
 

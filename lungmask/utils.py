@@ -1,4 +1,3 @@
-import logging
 import os
 import sys
 from typing import Tuple
@@ -12,6 +11,8 @@ import skimage.morphology
 from scipy import ndimage
 from torch.utils.data import Dataset
 from tqdm import tqdm
+
+from lungmask.logger import logger
 
 
 def preprocess(
@@ -169,8 +170,8 @@ def read_dicoms(path, primary=True, original=True, disable_tqdm=False):
                                 dcm_header_info.append(h_info)
 
             except Exception as e:
-                logging.error("Unexpected error:", e)
-                logging.warning("Doesn't seem to be DICOM, will be skipped: ", fname)
+                logger.error("Unexpected error:", e)
+                logger.warning("Doesn't seem to be DICOM, will be skipped: ", fname)
 
     conc = [x[1] for x in dcm_header_info]
     sidx = np.argsort(conc)
@@ -179,9 +180,9 @@ def read_dicoms(path, primary=True, original=True, disable_tqdm=False):
     vol_unique = np.unique(conc, return_index=1, return_inverse=1)  # unique volumes
     n_vol = len(vol_unique[1])
     if n_vol == 1:
-        logging.info("There is " + str(n_vol) + " volume in the study")
+        logger.info("There is " + str(n_vol) + " volume in the study")
     else:
-        logging.info("There are " + str(n_vol) + " volumes in the study")
+        logger.info("There are " + str(n_vol) + " volumes in the study")
 
     relevant_series = []
     relevant_volumes = []
@@ -215,17 +216,17 @@ def load_input_image(path: str, disable_tqdm=False) -> sitk.Image:
         sitk.Image: Loaded image
     """
     if os.path.isfile(path):
-        logging.info(f"Read input: {path}")
+        logger.info(f"Read input: {path}")
         input_image = sitk.ReadImage(path)
     else:
-        logging.info(f"Looking for dicoms in {path}")
+        logger.info(f"Looking for dicoms in {path}")
         dicom_vols = read_dicoms(
             path, original=False, primary=False, disable_tqdm=disable_tqdm
         )
         if len(dicom_vols) < 1:
             sys.exit("No dicoms found!")
         if len(dicom_vols) > 1:
-            logging.warning(
+            logger.warning(
                 "There are more than one volume in the path, will take the largest one"
             )
         input_image = dicom_vols[
@@ -252,7 +253,7 @@ def postprocessing(
     Returns:
         np.ndarray: Postprocessed volume
     """
-    logging.info("Postprocessing")
+    logger.info("Postprocessing")
 
     # CC analysis
     regionmask = skimage.measure.label(label_image)
