@@ -50,9 +50,6 @@ def apply(
     else:
         directions = np.asarray([1, 0, 0, 0, 1, 0, 0, 0, 1])
 
-    if model is None:
-        model = get_model("unet", "R231")
-
     if force_cpu:
         device = torch.device("cpu")
     else:
@@ -62,7 +59,10 @@ def apply(
             logging.info("No GPU support available, will use CPU. Note, that this is significantly slower!")
             batch_size = 1
             device = torch.device("cpu")
-    model.to(device)
+
+    if model is None:
+        model = get_model("unet", "R231")
+        model.to(device)
 
     if not noHU:
         tvolslices, xnew_box = utils.preprocess(inimg_raw, resolution=[256, 256])
@@ -87,7 +87,7 @@ def apply(
     with torch.no_grad():
         with torch.cuda.amp.autocast(enabled=enable_amp):
             for X in tqdm(dataloader_val, disable=not verbose):
-                X = X.float().to(device)
+                X = X.to(device)
                 prediction = model(X)
                 pls = torch.max(prediction, 1)[1].detach().cpu().numpy().astype(np.uint8)
                 timage_res = np.vstack((timage_res, pls))
@@ -117,7 +117,7 @@ def apply(
     if len(directions) == 9:
         outmask = np.flip(outmask, np.where(directions[[0, 4, 8]][::-1] < 0)[0])
 
-    return outmask.astype(np.uint8)
+    return outmask
 
 
 def get_model(modeltype, modelname):
