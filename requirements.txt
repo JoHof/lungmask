@@ -33,7 +33,7 @@ nvidia-cusparse-cu11==11.7.4.91
 nvidia-nccl-cu11==2.14.3
 nvidia-nvtx-cu11==11.7.91
 packaging==23.1
-Pillow==9.5.0
+Pillow==10.0.1
 platformdirs==3.2.0
 pluggy==1.0.0
 pre-commit==3.2.2
