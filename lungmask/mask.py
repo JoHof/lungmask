@@ -122,6 +122,12 @@ class LMInferer:
         if not self.force_cpu:
             if torch.cuda.is_available():
                 self.device = torch.device("cuda")
+            elif torch.backends.mps.is_available():
+                if torch.backends.mps.is_built():
+                    self.device = torch.device("mps")
+                    logger.info("An Apple Metal device is detected and will be used. Use --cpu to disable Metal and force running on CPU.")
+                else:
+                    logger.info("An Apple Metal device is detected but will not be used because this version of PyTorch is not built with Metal support.")
             else:
                 logger.info("No GPU found, using CPU instead")
         self.model.to(self.device)
