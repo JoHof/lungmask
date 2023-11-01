@@ -125,9 +125,13 @@ class LMInferer:
             elif torch.backends.mps.is_available():
                 if torch.backends.mps.is_built():
                     self.device = torch.device("mps")
-                    logger.info("An Apple Metal device is detected and will be used. Use --cpu to disable Metal and force running on CPU.")
+                    logger.info(
+                        "An Apple Metal device is detected and will be used. Use --cpu to disable Metal and force running on CPU."
+                    )
                 else:
-                    logger.info("An Apple Metal device is detected but will not be used because this version of PyTorch is not built with Metal support.")
+                    logger.info(
+                        "An Apple Metal device is detected but will not be used because this version of PyTorch is not built with Metal support."
+                    )
             else:
                 logger.info("No GPU found, using CPU instead")
         self.model.to(self.device)
@@ -179,7 +183,7 @@ class LMInferer:
 
         timage_res = np.empty((np.append(0, tvolslices[0].shape)), dtype=np.uint8)
 
-        with torch.no_grad():
+        with torch.inference_mode():
             for mbnp in tqdm(
                 chunked(tvolslices, self.batch_size),
                 disable=self.tqdm_disable,
