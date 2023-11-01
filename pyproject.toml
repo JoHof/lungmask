@@ -1,3 +1,6 @@
+[build-system]
+requires = ["setuptools", "wheel"]  # PEP 508 specifications.
+
 [tool.isort]
 multi_line_output = 3
 include_trailing_comma = true
