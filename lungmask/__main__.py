@@ -1,9 +1,9 @@
 import argparse
 import os
 import sys
+from importlib import metadata
 
 import numpy as np
-import pkg_resources  # type: ignore
 import SimpleITK as sitk
 
 from lungmask import LMInferer, utils
@@ -18,7 +18,7 @@ def path(string):
 
 
 def main():
-    version = pkg_resources.require("lungmask")[0].version
+    version = metadata.version("lungmask")
 
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
