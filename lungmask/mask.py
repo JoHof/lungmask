@@ -122,7 +122,7 @@ class LMInferer:
         if not self.force_cpu:
             if torch.cuda.is_available():
                 self.device = torch.device("cuda")
-            elif torch.backends.mps.is_available():
+            elif "mps" in torch.backends.__dict__ and torch.backends.mps.is_available():
                 if torch.backends.mps.is_built():
                     self.device = torch.device("mps")
                     logger.info(
