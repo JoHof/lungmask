@@ -15,6 +15,21 @@ from tqdm import tqdm
 from lungmask.logger import logger
 
 
+dicom_metadata_to_keep = (
+    '0008|0020', # StudyDate
+    '0008|0030', # StudyTime
+    '0008|0050', # AccessionNumber
+    '0008|0090', # ReferringPhysicianName
+    '0008|1030', # StudyDescription
+    '0010|0010', # PatientName
+    '0010|0020', # PatientID
+    '0010|0030', # PatientBirthDate
+    '0010|0040', # PatientSex
+    '0018|5100', # Patient Position
+    '0020|000d', # StudyInstanceUID
+    '0020|0010'  # StudyID
+)
+
 def preprocess(
     img: np.ndarray, resolution: list = [192, 192]
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -115,8 +130,9 @@ def reshape_mask(mask: np.ndarray, tbox: np.ndarray, origsize: tuple) -> np.ndar
     return res
 
 
-def read_dicoms(path, primary=True, original=True, disable_tqdm=False):
+def read_dicoms(path, primary=True, original=True, disable_tqdm=False, read_metadata=False):
     allfnames = []
+    
     for dir, _, fnames in os.walk(path):
         [allfnames.append(os.path.join(dir, fname)) for fname in fnames]
 
@@ -199,29 +215,48 @@ def read_dicoms(path, primary=True, original=True, disable_tqdm=False):
         relevant_series.append(vol_files)
         reader = sitk.ImageSeriesReader()
         reader.SetFileNames(vol_files)
+
+        if read_metadata:
+            reader.SetMetaDataDictionaryArrayUpdate(True)
+            reader.LoadPrivateTagsOn()
+
         vol = reader.Execute()
+
+        if read_metadata:
+            for key in reader.GetMetaDataKeys(0):
+                vol.SetMetaData(key, reader.GetMetaData(0, key))
+
         relevant_volumes.append(vol)
 
     return relevant_volumes
 
 
-def load_input_image(path: str, disable_tqdm=False) -> sitk.Image:
+def load_input_image(path: str, disable_tqdm=False, read_metadata=False) -> sitk.Image:
     """Loads image, if path points to a file, file will be loaded. If path points ot a folder, a DICOM series will be loaded. If multiple series are present, the largest series (higher number of slices) will be loaded.
 
     Args:
         path (str): File or folderpath to be loaded. If folder, DICOM series is expected
         disable_tqdm (bool, optional): Disable tqdm progress bar. Defaults to False.
+        read_metadata (bool, optional): Read the metadata - including DICOM tags - from the input and store in the loaded image
 
     Returns:
         sitk.Image: Loaded image
     """
     if os.path.isfile(path):
         logger.info(f"Read input: {path}")
-        input_image = sitk.ReadImage(path)
+
+        reader = sitk.ImageFileReader()
+        reader.SetFileName(path)
+        input_image = reader.Execute()
+
+        if read_metadata:
+            for key in reader.GetMetaDataKeys():
+                input_image.SetMetaData(key, reader.GetMetaData(key))
+                
     else:
         logger.info(f"Looking for dicoms in {path}")
         dicom_vols = read_dicoms(
-            path, original=False, primary=False, disable_tqdm=disable_tqdm
+            path, original=False, primary=False, disable_tqdm=disable_tqdm, read_metadata=read_metadata
         )
         if len(dicom_vols) < 1:
             sys.exit("No dicoms found!")
@@ -368,3 +403,14 @@ def keep_largest_connected_component(mask: np.ndarray) -> np.ndarray:
     max_region = np.argsort(resizes)[-1] + 1
     mask = mask == max_region
     return mask
+
+def get_DICOM_tags_to_keep():
+    """Returns the DICOM metadata to keep
+
+    Args:
+        none
+
+    Returns:
+        Tuple with the DICOM tags to keep
+    """
+    return dicom_metadata_to_keep

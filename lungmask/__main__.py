@@ -81,6 +81,11 @@ def main():
         action="version",
         version=version,
     )
+    parser.add_argument(
+        "--nokeeppatinfo",
+        action="store_true",
+        help="Do not keep study/patient related metadata of the input, if any.",
+    )
 
     argsin = sys.argv[1:]
     args = parser.parse_args(argsin)
@@ -94,9 +99,13 @@ def main():
     if args.cpu:
         batchsize = 1
 
+    # keeping any Patient / Study info is the default, deactivate in case of arg specified or non-HU data
+    keeppatinfo = not args.nokeeppatinfo or args.noHU
+
     logger.info("Load model")
 
-    input_image = utils.load_input_image(args.input, disable_tqdm=args.noprogress)
+    input_image = utils.load_input_image(args.input, disable_tqdm=args.noprogress, read_metadata=keeppatinfo)
+
     logger.info("Infer lungmask")
     if args.modelname == "LTRCLobes_R231":
         assert (
@@ -132,8 +141,30 @@ def main():
 
     result_out = sitk.GetImageFromArray(result)
     result_out.CopyInformation(input_image)
+
+    writer = sitk.ImageFileWriter()
+    writer.SetFileName(args.output)
+
+    if keeppatinfo:
+        # keep the Study Instance UID
+        writer.SetKeepOriginalImageUID(True)
+
+        DICOM_tags_to_keep = utils.get_DICOM_tags_to_keep()
+        
+        # copy the DICOM tags we want to keep
+        for key in input_image.GetMetaDataKeys():
+            if key in DICOM_tags_to_keep:
+                result_out.SetMetaData(key, input_image.GetMetaData(key))
+      
+        # set the Series Description tag
+        result_out.SetMetaData('0008|103e', f'Created with lungmask')
+
+        # set WL/WW
+        result_out.SetMetaData('0028|1050', '1')  # Window Center
+        result_out.SetMetaData('0028|1051', '2')  # Window Width
+
     logger.info(f"Save result to: {args.output}")
-    sitk.WriteImage(result_out, args.output)
+    writer.Execute(result_out)
 
 
 if __name__ == "__main__":
