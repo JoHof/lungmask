@@ -14,8 +14,7 @@ from tqdm import tqdm
 
 from lungmask.logger import logger
 
-
-dicom_metadata_to_keep = (
+DICOM_METADATA_TO_KEEP = (
     '0008|0020', # StudyDate
     '0008|0030', # StudyTime
     '0008|0050', # AccessionNumber
@@ -413,4 +412,4 @@ def get_DICOM_tags_to_keep():
     Returns:
         Tuple with the DICOM tags to keep
     """
-    return dicom_metadata_to_keep
+    return DICOM_METADATA_TO_KEEP

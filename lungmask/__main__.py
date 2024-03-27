@@ -82,7 +82,7 @@ def main():
         version=version,
     )
     parser.add_argument(
-        "--nokeeppatinfo",
+        "--removemetadata",
         action="store_true",
         help="Do not keep study/patient related metadata of the input, if any.",
     )
@@ -100,7 +100,7 @@ def main():
         batchsize = 1
 
     # keeping any Patient / Study info is the default, deactivate in case of arg specified or non-HU data
-    keeppatinfo = not args.nokeeppatinfo or args.noHU
+    keeppatinfo = not args.removemetadata and not args.noHU
 
     logger.info("Load model")
 
