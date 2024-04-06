@@ -72,7 +72,7 @@ def main():
     parser.add_argument(
         "--removemetadata",
         action="store_true",
-        help="Do not keep study/patient related metadata of the input, if any.",
+        help="Do not keep study/patient related metadata of the input, if any. Only affects output file formats that can store such information (e.g. DICOM).",
     )
 
     argsin = sys.argv[1:]
@@ -83,12 +83,12 @@ def main():
         batchsize = 1
 
     # keeping any Patient / Study info is the default, deactivate in case of arg specified or non-HU data
-    keeppatinfo = not args.removemetadata
+    keepmetadata = not args.removemetadata
 
     logger.info("Load model")
 
     input_image = utils.load_input_image(
-        args.input, disable_tqdm=args.noprogress, read_metadata=keeppatinfo
+        args.input, disable_tqdm=args.noprogress, read_metadata=keepmetadata
     )
 
     logger.info("Infer lungmask")
@@ -122,7 +122,7 @@ def main():
     writer = sitk.ImageFileWriter()
     writer.SetFileName(args.output)
 
-    if keeppatinfo:
+    if keepmetadata:
         # keep the Study Instance UID
         writer.SetKeepOriginalImageUID(True)
 
