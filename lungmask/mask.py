@@ -78,7 +78,6 @@ class LMInferer:
         force_cpu: bool = False,
         batch_size: int = 20,
         volume_postprocessing: bool = True,
-        noHU: bool = False,
         tqdm_disable: bool = False,
     ):
         """LungMaskInference
@@ -91,7 +90,6 @@ class LMInferer:
             force_cpu (bool, optional): Will not use GPU is `True`. Defaults to False.
             batch_size (int, optional): Batch size. Defaults to 20.
             volume_postprocessing (bool, optional): If `Fales` will not perform postprocessing (connected component analysis). Defaults to True.
-            noHU (bool, optional): If `True` no HU intensities are expected. Not recommended. Defaults to False.
             tqdm_disable (bool, optional): If `True`, will disable progress bar. Defaults to False.
         """
         assert (
@@ -113,7 +111,6 @@ class LMInferer:
         self.force_cpu = force_cpu
         self.batch_size = batch_size
         self.volume_postprocessing = volume_postprocessing
-        self.noHU = noHU
         self.tqdm_disable = tqdm_disable
 
         self.model = get_model(self.modelname, modelpath)
@@ -166,20 +163,9 @@ class LMInferer:
                 image = sitk.DICOMOrient(image, "LPS")
             inimg_raw = sitk.GetArrayFromImage(image)
 
-        if self.noHU:
-            # support for non HU images. This is just a hack. The models were not trained with this in mind
-            tvolslices = skimage.color.rgb2gray(inimg_raw)
-            tvolslices = skimage.transform.resize(tvolslices, [256, 256])
-            tvolslices = np.asarray([tvolslices * x for x in np.linspace(0.3, 2, 20)])
-            tvolslices[tvolslices > 1] = 1
-            sanity = [
-                (tvolslices[x] > 0.6).sum() > 25000 for x in range(len(tvolslices))
-            ]
-            tvolslices = tvolslices[sanity]
-        else:
-            tvolslices, xnew_box = utils.preprocess(inimg_raw, resolution=[256, 256])
-            tvolslices[tvolslices > 600] = 600
-            tvolslices = np.divide((tvolslices + 1024), 1624)
+        tvolslices, xnew_box = utils.preprocess(inimg_raw, resolution=[256, 256])
+        tvolslices[tvolslices > 600] = 600
+        tvolslices = np.divide((tvolslices + 1024), 1624)
 
         timage_res = np.empty((np.append(0, tvolslices[0].shape)), dtype=np.uint8)
 
@@ -207,22 +193,13 @@ class LMInferer:
         else:
             outmask = timage_res
 
-        if self.noHU:
-            outmask = skimage.transform.resize(
-                outmask[np.argmax((outmask == 1).sum(axis=(1, 2)))],
-                inimg_raw.shape[:2],
-                order=0,
-                anti_aliasing=False,
-                preserve_range=True,
-            )[None, :, :]
-        else:
-            outmask = np.asarray(
-                [
-                    utils.reshape_mask(outmask[i], xnew_box[i], inimg_raw.shape[1:])
-                    for i in range(outmask.shape[0])
-                ],
-                dtype=np.uint8,
-            )
+        outmask = np.asarray(
+            [
+                utils.reshape_mask(outmask[i], xnew_box[i], inimg_raw.shape[1:])
+                for i in range(outmask.shape[0])
+            ],
+            dtype=np.uint8,
+        )
 
         if not numpy_mode:
             if curr_orient != "LPS":
@@ -261,7 +238,6 @@ def apply(
     force_cpu=False,
     batch_size=20,
     volume_postprocessing=True,
-    noHU=False,
     tqdm_disable=False,
 ):
     warnings.warn(
@@ -272,7 +248,6 @@ def apply(
         force_cpu=force_cpu,
         batch_size=batch_size,
         volume_postprocessing=volume_postprocessing,
-        noHU=noHU,
         tqdm_disable=tqdm_disable,
     )
     if model is not None:
@@ -287,7 +262,6 @@ def apply_fused(
     force_cpu=False,
     batch_size=20,
     volume_postprocessing=True,
-    noHU=False,
     tqdm_disable=False,
 ):
     warnings.warn(
@@ -300,7 +274,6 @@ def apply_fused(
         fillmodel=fillmodel,
         batch_size=batch_size,
         volume_postprocessing=volume_postprocessing,
-        noHU=noHU,
         tqdm_disable=tqdm_disable,
     )
     return inferer.apply(image)
