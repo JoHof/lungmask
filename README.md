@@ -109,4 +109,5 @@ The regular U-net(R231) model works very well for COVID-19 CT scans. However, co
 ![alt text](figures/example_covid.jpg "COVID examples")
 
 ## jpg, png and non HU images
+**This feature is only available in versions between 0.2.5 and 0.2.14**
 As of version 0.2.5 these images are supported. Use the ```--noHU``` tag if you process images that are not encoded in HU. Keep in mind that the models were trained on proper CT scans encoded in HU. The results on cropped, annotated, very high and very low intensity shifted images may not be very reliable. When using the ```--noHU``` tag only single slices can be processed.
