@@ -15,19 +15,20 @@ from tqdm import tqdm
 from lungmask.logger import logger
 
 DICOM_METADATA_TO_KEEP = (
-    '0008|0020', # StudyDate
-    '0008|0030', # StudyTime
-    '0008|0050', # AccessionNumber
-    '0008|0090', # ReferringPhysicianName
-    '0008|1030', # StudyDescription
-    '0010|0010', # PatientName
-    '0010|0020', # PatientID
-    '0010|0030', # PatientBirthDate
-    '0010|0040', # PatientSex
-    '0018|5100', # Patient Position
-    '0020|000d', # StudyInstanceUID
-    '0020|0010'  # StudyID
+    "0008|0020",  # StudyDate
+    "0008|0030",  # StudyTime
+    "0008|0050",  # AccessionNumber
+    "0008|0090",  # ReferringPhysicianName
+    "0008|1030",  # StudyDescription
+    "0010|0010",  # PatientName
+    "0010|0020",  # PatientID
+    "0010|0030",  # PatientBirthDate
+    "0010|0040",  # PatientSex
+    "0018|5100",  # Patient Position
+    "0020|000d",  # StudyInstanceUID
+    "0020|0010",  # StudyID
 )
+
 
 def preprocess(
     img: np.ndarray, resolution: list = [192, 192]
@@ -129,9 +130,11 @@ def reshape_mask(mask: np.ndarray, tbox: np.ndarray, origsize: tuple) -> np.ndar
     return res
 
 
-def read_dicoms(path, primary=True, original=True, disable_tqdm=False, read_metadata=False):
+def read_dicoms(
+    path, primary=True, original=True, disable_tqdm=False, read_metadata=False
+):
     allfnames = []
-    
+
     for dir, _, fnames in os.walk(path):
         [allfnames.append(os.path.join(dir, fname)) for fname in fnames]
 
@@ -251,11 +254,15 @@ def load_input_image(path: str, disable_tqdm=False, read_metadata=False) -> sitk
         if read_metadata:
             for key in reader.GetMetaDataKeys():
                 input_image.SetMetaData(key, reader.GetMetaData(key))
-                
+
     else:
         logger.info(f"Looking for dicoms in {path}")
         dicom_vols = read_dicoms(
-            path, original=False, primary=False, disable_tqdm=disable_tqdm, read_metadata=read_metadata
+            path,
+            original=False,
+            primary=False,
+            disable_tqdm=disable_tqdm,
+            read_metadata=read_metadata,
         )
         if len(dicom_vols) < 1:
             sys.exit("No dicoms found!")
@@ -302,13 +309,13 @@ def postprocessing(
     # will hold mapping from regionlabels to original labels
     region_to_lobemap = np.zeros((len(regionlabels) + 1,), dtype=np.uint8)
     for r in regions:
-        r_max_intensity = int(r.max_intensity)
+        r_max_intensity = int(r.intensity_max)
         if r.area > origlabels_maxsub[r_max_intensity]:
             origlabels_maxsub[r_max_intensity] = r.area
             region_to_lobemap[r.label] = r_max_intensity
 
     for r in tqdm(regions, disable=disable_tqdm):
-        r_max_intensity = int(r.max_intensity)
+        r_max_intensity = int(r.intensity_max)
         if (
             r.area < origlabels_maxsub[r_max_intensity] or r_max_intensity in spare
         ) and r.area >= skip_below:  # area>2 improves runtime because small areas 1 and 2 voxel will be ignored
@@ -330,11 +337,11 @@ def postprocessing(
             if (
                 regions[regionlabels.index(mapto)].area
                 == origlabels_maxsub[
-                    int(regions[regionlabels.index(mapto)].max_intensity)
+                    int(regions[regionlabels.index(mapto)].intensity_max)
                 ]
             ):
                 origlabels_maxsub[
-                    int(regions[regionlabels.index(mapto)].max_intensity)
+                    int(regions[regionlabels.index(mapto)].intensity_max)
                 ] += myarea
             regions[regionlabels.index(mapto)].__dict__["_cache"]["area"] += myarea
 
@@ -402,6 +409,7 @@ def keep_largest_connected_component(mask: np.ndarray) -> np.ndarray:
     max_region = np.argsort(resizes)[-1] + 1
     mask = mask == max_region
     return mask
+
 
 def get_DICOM_tags_to_keep():
     """Returns the DICOM metadata to keep

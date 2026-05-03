@@ -1,5 +1,46 @@
 [build-system]
-requires = ["setuptools", "wheel"]  # PEP 508 specifications.
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lungmask"
+version = "0.2.21"
+authors = [
+    { name = "Johannes Hofmanninger", email = "j.hofmanninger@gmail.com" }
+]
+description = "Package for automated lung segmentation in CT"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pydicom",
+    "numpy",
+    "torch",
+    "scipy",
+    "SimpleITK",
+    "tqdm",
+    "scikit-image>=0.26.0",
+    "fill_voids",
+    "more-itertools",
+]
+
+[dependency-groups]
+dev = [
+    "pytest"
+]
+
+
+[project.urls]
+Homepage = "https://github.com/JoHof/lungmask"
+
+[project.scripts]
+lungmask = "lungmask.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["lungmask*"]
 
 [tool.isort]
 multi_line_output = 3
