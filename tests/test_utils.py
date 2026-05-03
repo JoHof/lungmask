@@ -1,8 +1,8 @@
 import os
 
 import numpy as np
-import SimpleITK as sitk
 import pytest
+import SimpleITK as sitk
 
 from lungmask.utils import (
     bbox_3D,
@@ -63,9 +63,11 @@ def test_bbox_3D():
     assert tuple(bb) == (0, 10, 1, 9, 2, 8)
 
 
-@pytest.mark.parametrize("read_metadata,exp_len_metadata", [(True, 22),(False, 0)])
+@pytest.mark.parametrize("read_metadata,exp_len_metadata", [(True, 22), (False, 0)])
 def test_read_dicoms(read_metadata, exp_len_metadata):
-    d = read_dicoms(os.path.join(os.path.dirname(__file__), "testdata"), read_metadata=read_metadata)
+    d = read_dicoms(
+        os.path.join(os.path.dirname(__file__), "testdata"), read_metadata=read_metadata
+    )
     assert d[0].GetSize() == (512, 512, 2)
     assert len(d[0].GetMetaDataKeys()) == exp_len_metadata
 
@@ -107,10 +109,12 @@ def test_reshape_mask():
     assert np.sum(cropped_mask) == 400
 
 
-@pytest.mark.parametrize("read_metadata,exp_len_metadata", [(True, 22),(False, 0)])
+@pytest.mark.parametrize("read_metadata,exp_len_metadata", [(True, 22), (False, 0)])
 def test_load_input_image(tmp_path, read_metadata, exp_len_metadata):
     # test dicom
-    d = load_input_image(os.path.join(os.path.dirname(__file__), "testdata"), read_metadata=read_metadata)
+    d = load_input_image(
+        os.path.join(os.path.dirname(__file__), "testdata"), read_metadata=read_metadata
+    )
     assert d.GetSize() == (512, 512, 2)
     assert len(d.GetMetaDataKeys()) == exp_len_metadata
 
