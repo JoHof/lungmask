@@ -2,16 +2,16 @@
 
 This package provides trained U-net models for lung segmentation. For now, four models are available:
 
-- U-net(R231): This model was trained on a large and diverse dataset that covers a wide range of visual variability. The model performs segmentation on individual slices, extracts right-left lung separately includes airpockets, tumors and effusions. The trachea will not be included in the lung segmentation. https://doi.org/10.1186/s41747-020-00173-2
+- U-net(R231): This model was trained on a large and diverse dataset that covers a wide range of visual variability. The model performs segmentation on individual slices, extracts the right and left lungs separately, and includes air pockets, tumors, and effusions. The trachea will not be included in the lung segmentation. https://doi.org/10.1186/s41747-020-00173-2
 
 - U-net(LTRCLobes): This model was trained on a subset of the [LTRC](https://www.nhlbi.nih.gov/science/lung-tissue-research-consortium-ltrc) dataset. The model performs segmentation of individual lung-lobes but yields limited performance when dense pathologies are present or when fissures are not visible at every slice.
 
-- U-net(LTRCLobes_R231): This will run the R231 and LTRCLobes model and fuse the results. False negatives from LTRCLobes will be filled by R231 predictions and mapped to a neighbor label. False positives from LTRCLobes will be removed. The fusing process is computationally intensive and can, depending on the data and results, take up to several minutes per volume.
+- U-net(LTRCLobes_R231): This will run the R231 and LTRCLobes models and fuse the results. False negatives from LTRCLobes will be filled by R231 predictions and mapped to a neighboring label. False positives from LTRCLobes will be removed. The fusing process is computationally intensive and can, depending on the data and results, take up to several minutes per volume.
 
 - [U-net(R231CovidWeb)](#COVID-19-Web)
 
 
-**Examples of the two models applied**. **Left:** U-net(R231), will distinguish between left and right lung and include very dense areas such as effusions (third row), tumor or severe fibrosis (fourth row) . **Right:** U-net(LTRLobes), will distinguish between lung lobes but will not include very dense areas. **LTRCLobes_R231** will fuse LTRCLobes and R231 results. **R231CovidWeb** is trained with additional COVID-19 data.
+**Examples of the two models applied**. **Left:** U-net(R231), will distinguish between left and right lung and include very dense areas such as effusions (third row), tumor or severe fibrosis (fourth row). **Right:** U-net(LTRCLobes), will distinguish between lung lobes but will not include very dense areas. **LTRCLobes_R231** will fuse LTRCLobes and R231 results. **R231CovidWeb** is trained with additional COVID-19 data.
 
 ![alt text](figures/figure.png "Result examples")
 
@@ -27,11 +27,11 @@ Five label models (Lung lobes): \
 4 = Right middle lobe \
 5 = Right lower lobe
 
-For more exciting research on lung CT data, checkout the website of our research group:
+For more exciting research on lung CT data, check out the website of our research group:
 https://www.cir.meduniwien.ac.at/research/lung/
 
 ## Referencing and citing
-If you use this code or one of the trained models in your work please refer to:
+If you use this code or one of the trained models in your work, please refer to:
 
 >Hofmanninger, J., Prayer, F., Pan, J. et al. Automatic lung segmentation in routine imaging is primarily a data diversity problem, not a methodology problem. Eur Radiol Exp 4, 50 (2020). https://doi.org/10.1186/s41747-020-00173-2
 
@@ -52,7 +52,7 @@ conda install conda-forge::lungmask
 On Windows, depending on your setup, it may be necessary to install torch beforehand: https://pytorch.org
 
 ## Runtime and GPU support
-Runtime between CPU-only and GPU supported inference varies greatly. Using the GPU, processing a volume takes only several seconds, using the CPU-only will take several minutes. To make use of the GPU make sure that your torch installation has CUDA support. In case of cuda out of memory errors reduce the batchsize to 1 with the optional argument ```--batchsize 1```
+Runtime between CPU-only and GPU-supported inference varies greatly. Using the GPU, processing a volume takes only several seconds, while using CPU-only inference takes several minutes. To make use of the GPU, make sure that your torch installation has CUDA support. In case of CUDA out-of-memory errors, reduce the batchsize to 1 with the optional argument ```--batchsize 1```
 
 ## Usage
 ### As a command line tool:
@@ -73,7 +73,7 @@ For additional options type:
 lungmask -h
 ```
 
-### As a python module:
+### As a Python module:
 
 ```
 from lungmask import LMInferer
@@ -91,7 +91,7 @@ Load an alternative model like so:
 inferer = LMInferer(modelname="R231CovidWeb")
 ```
 
-To use the model fusing capability for (e.g. LTRCLobes_R231) use:
+To use the model fusing capability (e.g. LTRCLobes_R231), use:
 ```
 inferer = LMInferer(modelname='LTRCLobes', fillmodel='R231')
 ```
@@ -109,9 +109,9 @@ The model works on full slices only. The slice to process has to show the full l
 ```
 lungmask INPUT OUTPUT --modelname R231CovidWeb
 ```
-The regular U-net(R231) model works very well for COVID-19 CT scans. However, collections of slices and case reports from the web are often cropped, annotated or encoded in regular image formats so that the original hounsfield unit (HU) values can only be estimated. The training data of the U-net(R231CovidWeb) model was augmented with COVID-19 slices that were mapped back from regular imaging formats to HU. The data was collected and prepared by MedSeg (http://medicalsegmentation.com/covid19/). While the regular U-net(R231) showed very good results for these images there may be cases for which this model will yield slightly improved segmentations. Note that you have to map images back to HU when using images from the web. This [blog post](https://medium.com/@hbjenssen/covid-19-radiology-data-collection-and-preparation-for-artificial-intelligence-4ecece97bb5b) describes how you can do that. Alternatively you can set the ```--noHU``` tag.
+The regular U-net(R231) model works very well for COVID-19 CT scans. However, collections of slices and case reports from the web are often cropped, annotated, or encoded in regular image formats so that the original Hounsfield unit (HU) values can only be estimated. The training data of the U-net(R231CovidWeb) model was augmented with COVID-19 slices that were mapped back from regular imaging formats to HU. The data was collected and prepared by MedSeg (http://medicalsegmentation.com/covid19/). While the regular U-net(R231) showed very good results for these images, there may be cases for which this model will yield slightly improved segmentations. Note that you have to map images back to HU when using images from the web. This [blog post](https://medium.com/@hbjenssen/covid-19-radiology-data-collection-and-preparation-for-artificial-intelligence-4ecece97bb5b) describes how you can do that. Alternatively, you can set the ```--noHU``` tag.
 ![alt text](figures/example_covid.jpg "COVID examples")
 
-## jpg, png and non HU images
+## JPG, PNG and non-HU images
 **This feature is only available in versions between 0.2.5 and 0.2.14**
-As of version 0.2.5 these images are supported. Use the ```--noHU``` tag if you process images that are not encoded in HU. Keep in mind that the models were trained on proper CT scans encoded in HU. The results on cropped, annotated, very high and very low intensity shifted images may not be very reliable. When using the ```--noHU``` tag only single slices can be processed.
+As of version 0.2.5, these images are supported. Use the ```--noHU``` tag if you process images that are not encoded in HU. Keep in mind that the models were trained on proper CT scans encoded in HU. The results on cropped, annotated, very high and very low intensity shifted images may not be very reliable. When using the ```--noHU``` tag, only single slices can be processed.
