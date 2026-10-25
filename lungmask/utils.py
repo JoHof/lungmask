@@ -234,10 +234,10 @@ def read_dicoms(
 
 
 def load_input_image(path: str, disable_tqdm=False, read_metadata=False) -> sitk.Image:
-    """Loads image, if path points to a file, file will be loaded. If path points ot a folder, a DICOM series will be loaded. If multiple series are present, the largest series (higher number of slices) will be loaded.
+    """Loads image, if path points to a file, file will be loaded. If path points to a folder, a DICOM series will be loaded. If multiple series are present, the largest series (higher number of slices) will be loaded.
 
     Args:
-        path (str): File or folderpath to be loaded. If folder, DICOM series is expected
+        path (str): File or folder path to be loaded. If a folder, a DICOM series is expected
         disable_tqdm (bool, optional): Disable tqdm progress bar. Defaults to False.
         read_metadata (bool, optional): Read the metadata - including DICOM tags - from the input and store in the loaded image
 
@@ -282,14 +282,14 @@ def postprocessing(
     disable_tqdm: bool = False,
     skip_below: int = 3,
 ) -> np.ndarray:
-    """some post-processing mapping small label patches to the neighbout whith which they share the
-        largest border. Only largest connected components (CC) for each label will be kept. If a label is member of the spare list it will be mapped to neighboring labels and not present in the final labelling.
+    """Some post-processing, mapping small label patches to the neighbor with which they share the
+        largest border. Only the largest connected component (CC) for each label will be kept. If a label is a member of the spare list, it will be mapped to a neighboring label and will not be present in the final labeling.
 
     Args:
         label_image (np.ndarray): Label image (int) to be processed
         spare (list, optional): Labels that are used for mapping to neighbors but not considered for final labelling. This is used for label fusion with a filling model. Defaults to [].
-        disable_tqdm (bool, optional): If true, tqdm will be diabled. Defaults to False.
-        skip_below (int, optional): If a CC is smaller than this value. It will not be merged but removed. This is for performance optimization.
+        disable_tqdm (bool, optional): If true, tqdm will be disabled. Defaults to False.
+        skip_below (int, optional): If a CC is smaller than this value, it will not be merged but removed. This is for performance optimization.
 
     Returns:
         np.ndarray: Postprocessed volume

@@ -84,12 +84,12 @@ class LMInferer:
 
         Args:
             modelname (str, optional): Model to be applied. Defaults to 'R231'.
-            modelpath (str, optional): Path to modeleights. `modelname` parameter will be ignored if provided. Defaults to None.
+            modelpath (str, optional): Path to model weights. `modelname` parameter will be ignored if provided. Defaults to None.
             fillmodel (Optional[str], optional): Fillmodel to be applied. Defaults to None.
             fillmodel_path (Optional[str], optional): Path to weights for fillmodel. `fillmodel` parameter will be ignored if provided. Defaults to None.
             force_cpu (bool, optional): Will not use GPU is `True`. Defaults to False.
             batch_size (int, optional): Batch size. Defaults to 20.
-            volume_postprocessing (bool, optional): If `Fales` will not perform postprocessing (connected component analysis). Defaults to True.
+            volume_postprocessing (bool, optional): If `False`, postprocessing will not be performed (connected component analysis). Defaults to True.
             tqdm_disable (bool, optional): If `True`, will disable progress bar. Defaults to False.
         """
         assert (
