@@ -1,12 +1,14 @@
 import os
 
 import numpy as np
+import pydicom
 import pytest
 import SimpleITK as sitk
 
 from lungmask.utils import (
     bbox_3D,
     crop_and_resize,
+    keep_largest_connected_component,
     load_input_image,
     postprocessing,
     preprocess,
@@ -70,6 +72,37 @@ def test_read_dicoms(read_metadata, exp_len_metadata):
     )
     assert d[0].GetSize() == (512, 512, 2)
     assert len(d[0].GetMetaDataKeys()) == exp_len_metadata
+
+
+@pytest.mark.parametrize(
+    "orientation", [(1, 0, 0, 0, 1, 0), (0, 1, 0, 0, 0, 1), (1, 0, 0, 0, 0, -1)]
+)
+def test_read_dicoms_sorts_along_slice_normal(tmp_path, monkeypatch, orientation):
+    normal = np.cross(orientation[:3], orientation[3:])
+    source = os.path.join(os.path.dirname(__file__), "testdata", "0.dcm")
+    # Deliberately supply slices out of spatial order, including non-axial series.
+    for file_index, position in enumerate([2, 0, 1]):
+        dicom = pydicom.dcmread(source)
+        dicom.ImageOrientationPatient = list(orientation)
+        dicom.ImagePositionPatient = (normal * position).tolist()
+        dicom.SOPInstanceUID = pydicom.uid.generate_uid()
+        dicom.file_meta.MediaStorageSOPInstanceUID = dicom.SOPInstanceUID
+        dicom.RescaleSlope = 1
+        dicom.RescaleIntercept = 0
+        dicom.PixelData = np.full(
+            (dicom.Rows, dicom.Columns), position, dtype=np.int16
+        ).tobytes()
+        dicom.save_as(tmp_path / f"{file_index}.dcm")
+
+    monkeypatch.setattr(
+        "lungmask.utils.os.walk",
+        lambda path: [(str(tmp_path), [], ["0.dcm", "1.dcm", "2.dcm"])],
+    )
+    volume = read_dicoms(tmp_path, disable_tqdm=True)[0]
+
+    assert np.array_equal(sitk.GetArrayFromImage(volume)[:, 0, 0], [0, 1, 2])
+    assert np.allclose(volume.GetOrigin(), [0, 0, 0])
+    assert np.allclose(np.asarray(volume.GetDirection()).reshape(3, 3)[:, 2], normal)
 
 
 def test_simple_bodymask():
@@ -161,3 +194,56 @@ def test_postprocessing():
         np.tile(label_image, (2, 1, 1)), spare=[3], disable_tqdm=True, skip_below=3
     )[0]
     assert res[2, 1] == 0
+
+
+@pytest.mark.parametrize("extra_spare", [False, True])
+def test_postprocessing_does_not_merge_lobe_fragment_into_spare(extra_spare):
+    label_image = np.zeros((2, 6, 17), dtype=np.uint8)
+    label_image[:, 1, 1:4] = 1  # largest component of lobe 1
+    label_image[:, 1:3, 8:11] = 6  # spare region, with component ID 2
+    label_image[:, 1:3, 11:15] = 3
+    label_image[:, 3, 8:10] = 1  # fragment shares a larger border with spare
+    label_image[:, 4, 8:9] = 2  # valid neighbor for the fragment
+    if extra_spare:
+        # A tied spare component can have a zero entry in region_to_lobemap.
+        label_image[:, 1:3, 4:7] = 6
+
+    result = postprocessing(label_image, spare=[6], disable_tqdm=True)
+
+    assert np.all(result[:, 3, 8:10] == 2)
+    assert np.all(result[:, 1:3, 8:11] == 3)
+    if extra_spare:
+        assert np.all(result[:, 1:3, 4:7] == 1)
+
+
+@pytest.mark.parametrize("slices", [1, 2])
+@pytest.mark.parametrize("label_count", [1, 2])
+def test_postprocessing_preserves_labels_without_background(slices, label_count):
+    label_image = np.ones((slices, 4, 4), dtype=np.uint8)
+    if label_count == 2:
+        label_image[:, :, 2:] = 2
+
+    result = postprocessing(label_image, disable_tqdm=True)
+
+    assert np.array_equal(result, label_image)
+
+
+def test_keep_largest_connected_component_empty():
+    mask = np.zeros((2, 4, 4), dtype=bool)
+
+    result = keep_largest_connected_component(mask)
+
+    assert result.dtype == bool
+    assert np.array_equal(result, mask)
+
+
+def test_postprocessing_single_slice_fills_only_enclosed_holes():
+    label_image = np.zeros((1, 6, 6), dtype=np.uint8)
+    label_image[:, 1:5, 1:5] = 1
+    label_image[:, 2:4, 2:4] = 0
+    expected = label_image.copy()
+    expected[:, 2:4, 2:4] = 1
+
+    result = postprocessing(label_image, disable_tqdm=True)
+
+    assert np.array_equal(result, expected)

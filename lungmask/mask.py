@@ -93,9 +93,9 @@ class LMInferer:
             tqdm_disable (bool, optional): If `True`, will disable progress bar. Defaults to False.
         """
         assert (
-            modelname in MODEL_URLS
+            modelpath is not None or modelname in MODEL_URLS
         ), "Modelname not found. Please choose from: {}".format(MODEL_URLS.keys())
-        if fillmodel is not None:
+        if fillmodel is not None and fillmodel_path is None:
             assert (
                 fillmodel in MODEL_URLS
             ), "Modelname not found. Please choose from: {}".format(MODEL_URLS.keys())
@@ -229,7 +229,9 @@ class LMInferer:
             res_l[np.logical_and(res_l == 0, res_r > 0)] = spare_value
             res_l[res_r == 0] = 0
             logger.info("Fusing results... this may take up to several minutes!")
-            return utils.postprocessing(res_l, spare=[spare_value])
+            return utils.postprocessing(
+                res_l, spare=[spare_value], disable_tqdm=self.tqdm_disable
+            )
 
 
 def apply(

@@ -182,6 +182,11 @@ def read_dicoms(
                                 dicom_header.SeriesInstanceUID,
                                 fname,
                                 dicom_header.ImagePositionPatient,
+                                getattr(
+                                    dicom_header,
+                                    "ImageOrientationPatient",
+                                    [1, 0, 0, 0, 1, 0],
+                                ),
                             ]
                             if h_info_wo_name not in unique_set:
                                 unique_set.append(h_info_wo_name)
@@ -209,9 +214,10 @@ def read_dicoms(
         curr_vol = i
         info_idxs = np.where(vol_unique[2] == curr_vol)[0]
         vol_files = dcm_header_info[info_idxs, 2]
-        positions = np.asarray(
-            [np.asarray(x[2]) for x in dcm_header_info[info_idxs, 3]]
-        )
+        orientation = np.asarray(dcm_header_info[info_idxs[0], 4], dtype=float)
+        normal = np.cross(orientation[:3], orientation[3:])
+        # Project onto the slice normal: z alone cannot order non-axial scans.
+        positions = np.asarray(list(dcm_header_info[info_idxs, 3]), dtype=float) @ normal
         slicesort_idx = np.argsort(positions)
         vol_files = vol_files[slicesort_idx]
         relevant_series.append(vol_files)
@@ -305,6 +311,8 @@ def postprocessing(
     regions = skimage.measure.regionprops(regionmask, label_image)
     regions.sort(key=lambda x: x.area)
     regionlabels = [x.label for x in regions]
+    # Neighbors use component IDs, whereas spare contains original label values.
+    spare_regions = {r.label for r in regions if int(r.intensity_max) in spare}
 
     # will hold mapping from regionlabels to original labels
     region_to_lobemap = np.zeros((len(regionlabels) + 1,), dtype=np.uint8)
@@ -327,7 +335,12 @@ def postprocessing(
             maxmap = 0
             myarea = 0
             for ix, n in enumerate(neighbours):
-                if n != 0 and n != r.label and counts[ix] > maxmap and n not in spare:
+                if (
+                    n != 0
+                    and n != r.label
+                    and counts[ix] > maxmap
+                    and n not in spare_regions
+                ):
                     maxmap = counts[ix]
                     mapto = n
                     myarea = r.area
@@ -349,17 +362,21 @@ def postprocessing(
     outmask_mapped[np.isin(outmask_mapped, spare)] = 0
 
     if outmask_mapped.shape[0] == 1:
-        holefiller = (
-            lambda x: skimage.morphology.area_closing(
-                x[0].astype(int), area_threshold=64
+
+        def holefiller(x):
+            # Boolean closing preserves foreground even for images below 64 pixels.
+            # Restrict additions to holes so exterior background stays background.
+            return (
+                skimage.morphology.area_closing(x[0], area_threshold=64)
+                & ndimage.binary_fill_holes(x[0])
             )[None, :, :]
-            == 1
-        )
     else:
         holefiller = fill_voids.fill
 
     outmask = np.zeros(outmask_mapped.shape, dtype=np.uint8)
-    for i in np.unique(outmask_mapped)[1:]:
+    for i in np.unique(outmask_mapped):
+        if i == 0:
+            continue
         outmask[holefiller(keep_largest_connected_component(outmask_mapped == i))] = i
 
     return outmask
@@ -405,6 +422,8 @@ def keep_largest_connected_component(mask: np.ndarray) -> np.ndarray:
     """
     mask = skimage.measure.label(mask)
     regions = skimage.measure.regionprops(mask)
+    if not regions:
+        return np.zeros(mask.shape, dtype=bool)
     resizes = np.asarray([x.area for x in regions])
     max_region = np.argsort(resizes)[-1] + 1
     mask = mask == max_region
