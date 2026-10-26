@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lungmask"
-version = "0.2.21"
+version = "0.2.22"
 authors = [
     { name = "Johannes Hofmanninger", email = "j.hofmanninger@gmail.com" }
 ]
